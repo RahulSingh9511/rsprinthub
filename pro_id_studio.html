@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ID-Gen Studio Pro | Free Identity Card Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Oswald:wght@500;700&family=Playfair+Display:wght@600;700&family=Roboto+Mono:wght@500&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .workspace-bg {
+            background-color: #1e293b;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        #zoomableContainer {
+            transform-origin: top center;
+            transition: transform 0.2s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 100px;
+        }
+
+        .canvas-wrapper { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); background: white; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+
+        .sidebar-tab { transition: all 0.2s; cursor: pointer; border-left: 3px solid transparent; color: #94a3b8; }
+        .sidebar-tab:hover { background-color: #1e293b; color: #38bdf8; }
+        .sidebar-tab.active { background-color: #0f172a; color: #0ea5e9; border-left-color: #0ea5e9; }
+        .drawer-panel { background-color: #0f172a; border-right: 1px solid #1e293b; overflow-y: auto; height: 100%; }
+
+        .panel-input { width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #f8fafc; outline: none; transition: 0.2s; }
+        .panel-input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); }
+        .panel-btn { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 6px; padding: 8px; font-size: 13px; cursor: pointer; transition: 0.2s; text-align: center; }
+        .panel-btn:hover { background: #334155; color: white; }
+        .panel-btn.active { background: #0ea5e9; color: white; border-color: #38bdf8; }
+        
+        .range-slider { width: 100%; accent-color: #0ea5e9; }
+        .modal-bg { background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); }
+    </style>
+</head>
+<body>
+
+    <header class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 z-50">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+            <div class="h-6 w-px bg-slate-700"></div>
+
+            <div class="w-10 h-10 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-xl shadow-[0_0_15px_rgba(14,165,233,0.4)]">
+                <i class="fa-solid fa-id-badge text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black text-white tracking-tight leading-none">ID-Gen Studio Pro</h1>
+                <span class="text-[10px] font-bold bg-slate-800 text-cyan-400 px-2 py-0.5 rounded-full uppercase tracking-wider inline-block mt-0.5 border border-cyan-900/50">Free Unlimited ID Studio</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="confirmReset()" class="text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left"></i> Start Fresh
+            </button>
+            <button onclick="simulateBulkUpload()" class="text-emerald-400 bg-emerald-900/30 hover:bg-emerald-900/50 border border-emerald-800/50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-file-csv"></i> Bulk Upload Demo
+            </button>
+            <button onclick="toggleGuideModal(true)" class="text-cyan-400 bg-cyan-900/30 hover:bg-cyan-900/50 border border-cyan-800/50 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2">
+                <i class="fa-solid fa-ruler-combined"></i> Print Layout Guide
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-grow overflow-hidden relative">
+
+        <!-- LANDING VIEW -->
+        <div id="heroLandingView" class="absolute inset-0 z-40 bg-slate-900 flex flex-col items-center justify-center p-8">
+            <div class="w-24 h-24 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center text-5xl text-white shadow-[0_0_30px_rgba(14,165,233,0.5)] mb-8 transform rotate-3">
+                <i class="fa-solid fa-id-card-clip"></i>
+            </div>
+            <h2 class="text-4xl md:text-5xl font-black text-white mb-4 text-center tracking-tight">Design Professional School & College ID Cards Instantly</h2>
+            <p class="text-slate-400 font-medium mb-12 text-center max-w-2xl text-lg">Completely free. No watermark. Create customized single or bulk identity cards in seconds. Select a format below to begin.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+                <div onclick="startWorkspace('cr80-v')" class="bg-slate-800 border border-slate-700 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(14,165,233,0.2)] p-8 rounded-2xl cursor-pointer transition text-center group">
+                    <div class="w-12 h-20 border-4 border-slate-500 group-hover:border-cyan-400 rounded-md mx-auto mb-4 transition relative flex items-start justify-center pt-2"><div class="w-4 h-1 bg-slate-500 group-hover:bg-cyan-400 rounded-full transition"></div></div>
+                    <h3 class="text-xl font-bold text-white mb-1">CR80 Vertical</h3>
+                    <p class="text-xs text-slate-400">2.13" x 3.38" (Most Popular)</p>
+                </div>
+                <div onclick="startWorkspace('cr80-h')" class="bg-slate-800 border border-slate-700 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(14,165,233,0.2)] p-8 rounded-2xl cursor-pointer transition text-center group">
+                    <div class="w-20 h-12 border-4 border-slate-500 group-hover:border-cyan-400 rounded-md mx-auto mb-4 mt-4 transition relative flex items-center justify-start pl-2"><div class="w-1 h-4 bg-slate-500 group-hover:bg-cyan-400 rounded-full transition"></div></div>
+                    <h3 class="text-xl font-bold text-white mb-1">CR80 Horizontal</h3>
+                    <p class="text-xs text-slate-400">3.38" x 2.13" (Classic Landscape)</p>
+                </div>
+                <div onclick="toggleCustomSizeInput()" class="bg-slate-800 border border-slate-700 hover:border-purple-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.2)] p-8 rounded-2xl cursor-pointer transition text-center group flex flex-col justify-center">
+                    <i class="fa-solid fa-expand text-4xl text-slate-500 group-hover:text-purple-400 mb-4 transition"></i>
+                    <h3 class="text-xl font-bold text-white mb-1">Custom Size</h3>
+                    <p class="text-xs text-slate-400">Enter manual dimensions</p>
+                </div>
+            </div>
+            
+            <div id="customSizeEntryBox" class="mt-8 hidden bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-md">
+                <div class="flex gap-4 mb-4">
+                    <div class="flex-1"><label class="text-xs text-slate-400 block mb-1">Width (px)</label><input type="number" id="inpCustW" value="639" class="panel-input"></div>
+                    <div class="flex-1"><label class="text-xs text-slate-400 block mb-1">Height (px)</label><input type="number" id="inpCustH" value="1014" class="panel-input"></div>
+                </div>
+                <button onclick="startWorkspace('custom')" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-lg transition">Create Canvas</button>
+            </div>
+        </div>
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="w-20 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 z-30 py-4">
+            <div class="sidebar-tab active flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-templates', this)"><i class="fa-solid fa-table-cells-large text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Templates</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-fields', this)"><i class="fa-solid fa-font text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Fields</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-photo', this)"><i class="fa-solid fa-user-tie text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Photo</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-shapes', this)"><i class="fa-solid fa-shapes text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Badges</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-barcodes', this)"><i class="fa-solid fa-barcode text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Codes</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-bg', this)"><i class="fa-solid fa-fill-drip text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">BG</span></div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 gap-1.5" onclick="openSidebarTab('tab-layers', this)"><i class="fa-solid fa-layer-group text-xl"></i><span class="text-[9px] uppercase tracking-wider font-bold">Layers</span></div>
+        </aside>
+
+        <!-- LEFT DRAWERS -->
+        <aside id="sidebar-drawer" class="w-72 drawer-panel z-20 shrink-0">
+            <!-- Templates -->
+            <div id="tab-templates" class="p-5 block">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Templates Gallery</h2>
+                <select id="templateCategory" class="panel-input mb-4" onchange="renderTemplates(this.value)">
+                    <option value="Primary School">Primary School</option>
+                    <option value="High School / Secondary">High School / Secondary</option>
+                    <option value="University & College">University & College</option>
+                    <option value="Faculty & Staff">Faculty & Staff</option>
+                    <option value="Dark Theme IDs">Dark Theme IDs</option>
+                    <option value="Minimalist & Modern">Minimalist & Modern</option>
+                </select>
+                <div class="text-cyan-400 text-[10px] font-bold mb-4 text-center" id="totalTemplateCount">Loading...</div>
+
+                <div class="grid grid-cols-2 gap-3" id="templateListGrid">
+                    <!-- Templates rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Profile Fields -->
+            <div id="tab-fields" class="p-5 hidden">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Profile Fields</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Institutional</h3>
+                        <button onclick="addCanvasText('Institution Name', 28, 'bold')" class="panel-btn w-full mb-1">Institution/College Name</button>
+                        <button onclick="addCanvasText('Campus Branch', 16, 'normal')" class="panel-btn w-full mb-1">Campus Branch</button>
+                        <button onclick="addCanvasText('Session: 2026-2027', 14, 'normal')" class="panel-btn w-full mb-1">Session / Year</button>
+                    </div>
+                    <div>
+                        <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Personal Details</h3>
+                        <button onclick="addCanvasText('Student Name', 24, 'bold')" class="panel-btn w-full mb-1">Full Name</button>
+                        <button onclick="addCanvasText('ID: STU-88902', 16, 'bold')" class="panel-btn w-full mb-1">Roll / Enrollment ID</button>
+                        <button onclick="addCanvasText('Course: B.Tech CS', 14, 'normal')" class="panel-btn w-full mb-1">Course / Stream</button>
+                        <button onclick="addCanvasText('DOB: 15-Aug-2005', 12, 'normal')" class="panel-btn w-full mb-1">Date of Birth</button>
+                        <button onclick="addCanvasText('Blood Grp: O+', 14, 'bold', '#e11d48')" class="panel-btn w-full mb-1">Blood Group</button>
+                    </div>
+                    <div>
+                        <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Contact & Auth</h3>
+                        <button onclick="addCanvasText('Emergency: 9876543210', 12, 'normal')" class="panel-btn w-full mb-1">Emergency Phone</button>
+                        <button onclick="addCanvasText('123 College Road, City', 12, 'normal')" class="panel-btn w-full mb-1">Residential Address</button>
+                        <button onclick="addCanvasText('Authorized Signatory', 10, 'normal')" class="panel-btn w-full mb-1 border-dashed">Signature Line</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Photo -->
+            <div id="tab-photo" class="p-5 hidden">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Smart Student Photo</h2>
+                <div class="border-2 border-dashed border-cyan-800 bg-slate-800/50 rounded-xl p-6 text-center mb-6 cursor-pointer hover:border-cyan-400 transition" onclick="document.getElementById('studentPhotoUpload').click()">
+                    <i class="fa-solid fa-user-tie text-3xl text-cyan-500 mb-2"></i>
+                    <p class="text-sm font-semibold text-cyan-400">Upload Student Photo</p>
+                    <p class="text-xs text-slate-500 mt-1">JPG, PNG</p>
+                </div>
+                <input type="file" id="studentPhotoUpload" class="hidden" accept="image/*" onchange="handleStudentPhotoUpload(event)">
+                
+                <div id="photoMaskingTools" class="opacity-50 pointer-events-none">
+                    <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Instant Masking Shapes</h3>
+                    <div class="grid grid-cols-4 gap-2 mb-4">
+                        <button onclick="applyPhotoMask('square')" class="panel-btn aspect-square"><div class="w-full h-full bg-slate-400 rounded-sm"></div></button>
+                        <button onclick="applyPhotoMask('rounded')" class="panel-btn aspect-square"><div class="w-full h-full bg-slate-400 rounded-xl"></div></button>
+                        <button onclick="applyPhotoMask('circle')" class="panel-btn aspect-square"><div class="w-full h-full bg-slate-400 rounded-full"></div></button>
+                        <button onclick="applyPhotoMask('oval')" class="panel-btn aspect-square"><div class="w-full h-full bg-slate-400 rounded-[50%/100%]"></div></button>
+                    </div>
+                    
+                    <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Photo Borders</h3>
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="color" id="photoBorderColor" class="w-8 h-8 rounded p-0 border-0 cursor-pointer" onchange="updatePhotoBorder()">
+                        <input type="range" id="photoBorderWidth" min="0" max="20" value="0" class="range-slider" oninput="updatePhotoBorder()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shapes & Badges -->
+            <div id="tab-shapes" class="p-5 hidden">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Shapes & Badges</h2>
+                <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Structural Shapes</h3>
+                <div class="grid grid-cols-3 gap-2 mb-6">
+                    <button onclick="addShape('rect')" class="panel-btn flex items-center justify-center py-3"><div class="w-6 h-6 bg-slate-400"></div></button>
+                    <button onclick="addShape('circle')" class="panel-btn flex items-center justify-center py-3"><div class="w-6 h-6 bg-slate-400 rounded-full"></div></button>
+                    <button onclick="addShape('line')" class="panel-btn flex items-center justify-center py-3"><div class="w-6 h-1 bg-slate-400"></div></button>
+                </div>
+                
+                <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Institutional Icons</h3>
+                <div class="grid grid-cols-4 gap-2 mb-6" id="badgeIconsGrid">
+                    <!-- Badges via JS -->
+                </div>
+            </div>
+
+            <!-- Barcodes & QR -->
+            <div id="tab-barcodes" class="p-5 hidden">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Barcodes & QR Codes</h2>
+                
+                <div class="bg-slate-800 p-4 rounded-lg mb-4 border border-slate-700">
+                    <h3 class="text-[11px] font-bold text-cyan-400 mb-2"><i class="fa-solid fa-qrcode mr-1"></i> Smart QR Code</h3>
+                    <input type="text" id="qrDataInput" placeholder="Enter ID URL or Data..." class="panel-input mb-2" value="ID-2026-901">
+                    <button onclick="generateQRCode()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded text-xs transition">Generate QR Code</button>
+                </div>
+
+                <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                    <h3 class="text-[11px] font-bold text-cyan-400 mb-2"><i class="fa-solid fa-barcode mr-1"></i> ID Barcode</h3>
+                    <input type="text" id="barcodeDataInput" placeholder="Enter Student ID..." class="panel-input mb-2" value="STU88902">
+                    <button onclick="generateBarcode()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded text-xs transition">Generate Barcode</button>
+                </div>
+            </div>
+
+            <!-- Background & Textures -->
+            <div id="tab-bg" class="p-5 hidden">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Background Settings</h2>
+                
+                <div class="mb-6">
+                    <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Solid Colors</h3>
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="color" id="bgSolidColorPicker" onchange="setCanvasBackground(this.value)" class="w-8 h-8 rounded border-0 cursor-pointer p-0">
+                        <span class="text-xs text-slate-300 font-mono" id="bgHexDisplay">#ffffff</span>
+                    </div>
+                    <div class="grid grid-cols-6 gap-1.5" id="quickColorGrid"></div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-[10px] text-slate-400 mb-2 uppercase font-bold">Security Guilloche Patterns</h3>
+                    <div class="grid grid-cols-2 gap-2" id="securityPatternsGrid"></div>
+                </div>
+            </div>
+
+            <!-- Layers -->
+            <div id="tab-layers" class="p-5 hidden flex flex-col h-full">
+                <h2 class="text-xs font-black text-slate-300 uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Layers Management</h2>
+                <div class="flex-grow overflow-y-auto pr-1 custom-scroll space-y-2" id="layersPanelList">
+                    <!-- Layers JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER PANEL -->
+        <div class="flex flex-col flex-grow relative overflow-hidden bg-slate-900 border-x border-slate-800">
+            
+            <div class="h-12 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-4 shrink-0 shadow-sm z-20">
+                <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-md border border-slate-700">
+                    <button onclick="actionUndo()" class="panel-btn w-8 h-8 !p-0" title="Undo"><i class="fa-solid fa-rotate-left text-xs"></i></button>
+                    <button onclick="actionRedo()" class="panel-btn w-8 h-8 !p-0" title="Redo"><i class="fa-solid fa-rotate-right text-xs"></i></button>
+                </div>
+                
+                <div class="flex bg-slate-900 rounded-lg border border-slate-700 p-1 overflow-hidden">
+                    <button id="btnViewFront" onclick="switchCanvasSide('front')" class="px-6 py-1.5 rounded-md text-xs font-bold bg-cyan-600 text-white shadow-sm transition">FRONT SIDE</button>
+                    <button id="btnViewBack" onclick="switchCanvasSide('back')" class="px-6 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition">BACK SIDE</button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                        <input type="checkbox" id="snapGridToggle" class="w-3.5 h-3.5 accent-cyan-500"> Snap to Grid
+                    </label>
+                    <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-md border border-slate-700">
+                        <button onclick="zoomWorkspace(-0.1)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white rounded"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                        <span id="zoomLevelDisplay" class="text-xs font-mono text-cyan-400 w-12 text-center">100%</span>
+                        <button onclick="zoomWorkspace(0.1)" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white rounded"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workspace Viewport -->
+            <div class="workspace-bg flex-grow relative overflow-auto flex flex-col items-center pt-10" id="workspaceViewport" onclick="clearSelection(event)">
+                <div id="zoomableContainer">
+                    <div id="frontCanvasWrapper" class="canvas-wrapper"><canvas id="frontCanvas"></canvas></div>
+                    <div id="backCanvasWrapper" class="canvas-wrapper hidden"><canvas id="backCanvas"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-30 overflow-y-auto">
+            <div class="p-4 border-b border-slate-800 bg-slate-800/50">
+                <h3 class="text-[10px] text-slate-400 uppercase font-bold mb-2">Export & Print</h3>
+                <div class="space-y-2">
+                    <button onclick="downloadSingleCard('png')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-xs transition flex items-center justify-center gap-2 border border-slate-600"><i class="fa-solid fa-image"></i> Download Single (PNG)</button>
+                    <button onclick="downloadSingleCard('pdf')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-xs transition flex items-center justify-center gap-2 border border-slate-600"><i class="fa-solid fa-file-pdf"></i> Download Card (PDF)</button>
+                    <button onclick="generateSheetPrint()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-2.5 rounded shadow-lg transition flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Sheet Print Mode (A4)</button>
+                </div>
+            </div>
+
+            <div class="p-5" id="propsPanel">
+                <div id="noSelectionState" class="flex flex-col items-center justify-center py-10 opacity-40 text-center">
+                    <i class="fa-solid fa-arrow-pointer text-4xl mb-3 text-slate-500"></i>
+                    <p class="text-xs font-semibold text-slate-400">Select an element on the canvas to view editing properties.</p>
+                </div>
+
+                <div id="textPropsGroup" class="hidden space-y-4">
+                    <h2 class="text-xs font-black text-cyan-400 uppercase tracking-widest border-b border-slate-700 pb-1.5">Typography Engine</h2>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Font Family</label>
+                        <select id="propFontFamily" class="panel-input" onchange="updateObj('fontFamily', this.value)"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Size (px)</label>
+                            <input type="number" id="propFontSize" class="panel-input text-center" onchange="updateObj('fontSize', parseInt(this.value))">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Color</label>
+                            <input type="color" id="propTextColor" class="w-full h-[34px] rounded border-0 cursor-pointer p-0" onchange="updateObj('fill', this.value)">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Format & Align</label>
+                        <div class="flex gap-1 mb-2 bg-slate-800 p-1 rounded border border-slate-700">
+                            <button id="btnBold" onclick="toggleObjProp('fontWeight', 'bold', 'normal')" class="panel-btn flex-1 font-bold">B</button>
+                            <button id="btnItalic" onclick="toggleObjProp('fontStyle', 'italic', 'normal')" class="panel-btn flex-1 italic">I</button>
+                            <button id="btnUnderline" onclick="toggleObjProp('underline', true, false)" class="panel-btn flex-1 underline">U</button>
+                        </div>
+                        <div class="flex gap-1 bg-slate-800 p-1 rounded border border-slate-700">
+                            <button id="btnAlignL" onclick="updateObj('textAlign', 'left')" class="panel-btn flex-1"><i class="fa-solid fa-align-left"></i></button>
+                            <button id="btnAlignC" onclick="updateObj('textAlign', 'center')" class="panel-btn flex-1"><i class="fa-solid fa-align-center"></i></button>
+                            <button id="btnAlignR" onclick="updateObj('textAlign', 'right')" class="panel-btn flex-1"><i class="fa-solid fa-align-right"></i></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block flex justify-between"><span>Letter Spacing</span> <span id="lblCharSpace">0</span></label>
+                        <input type="range" id="propCharSpace" min="-50" max="500" class="range-slider" oninput="document.getElementById('lblCharSpace').innerText=this.value; updateObj('charSpacing', parseInt(this.value))">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block flex justify-between"><span>Line Height</span> <span id="lblLineHeight">1.2</span></label>
+                        <input type="range" id="propLineHeight" min="0.5" max="2.5" step="0.1" class="range-slider" oninput="document.getElementById('lblLineHeight').innerText=this.value; updateObj('lineHeight', parseFloat(this.value))">
+                    </div>
+                </div>
+
+                <div id="graphicPropsGroup" class="hidden space-y-4">
+                    <h2 class="text-xs font-black text-cyan-400 uppercase tracking-widest border-b border-slate-700 pb-1.5">Graphic Engine</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Fill Color</label>
+                            <input type="color" id="propFill" class="w-full h-[34px] rounded border-0 cursor-pointer p-0" onchange="updateObj('fill', this.value)">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Border Color</label>
+                            <input type="color" id="propStroke" class="w-full h-[34px] rounded border-0 cursor-pointer p-0" onchange="updateObj('stroke', this.value)">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block flex justify-between"><span>Opacity</span> <span id="lblOpacity">100%</span></label>
+                        <input type="range" id="propOpacity" min="0" max="1" step="0.05" class="range-slider" oninput="document.getElementById('lblOpacity').innerText=Math.round(this.value*100)+'%'; updateObj('opacity', parseFloat(this.value))">
+                    </div>
+                    <div id="radiusControl">
+                        <label class="text-[10px] text-slate-400 block flex justify-between"><span>Corner Radius</span> <span id="lblRadius">0</span></label>
+                        <input type="range" id="propRadius" min="0" max="300" class="range-slider" oninput="document.getElementById('lblRadius').innerText=this.value; updateObj('rx', parseInt(this.value)); updateObj('ry', parseInt(this.value))">
+                    </div>
+                </div>
+
+                <div id="commonActionGroup" class="hidden mt-6 space-y-2 border-t border-slate-700 pt-4">
+                    <h3 class="text-[10px] text-slate-400 uppercase font-bold mb-2">Layer Actions</h3>
+                    <div class="flex gap-2">
+                        <button onclick="objBringFront()" class="panel-btn flex-1 text-xs"><i class="fa-solid fa-arrow-up text-[10px]"></i> Front</button>
+                        <button onclick="objSendBack()" class="panel-btn flex-1 text-xs"><i class="fa-solid fa-arrow-down text-[10px]"></i> Back</button>
+                    </div>
+                    <button onclick="deleteActiveObject()" class="panel-btn w-full text-red-400 border-red-900/50 hover:bg-red-900/30 text-xs"><i class="fa-solid fa-trash-can mr-1"></i> Delete Selected</button>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Guide Modal -->
+    <div id="guideModal" class="hidden fixed inset-0 modal-bg z-[200] items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-lg w-full relative">
+            <button onclick="toggleGuideModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h3 class="text-xl font-bold text-white mb-4"><i class="fa-solid fa-ruler-combined text-cyan-400 mr-2"></i> Print Layout Guide</h3>
+            <div class="text-slate-300 text-sm space-y-3">
+                <p><b>Standard CR80 Size:</b> 2.13" x 3.38" (approx 54mm x 86mm).</p>
+                <p><b>Bleed Margin:</b> We recommend keeping critical text at least <b>3mm</b> away from the edges to ensure nothing is cut off during bulk printing.</p>
+                <p><b>High-Resolution:</b> The canvas is scaled to 300 DPI (639px x 1014px) internally to guarantee ultra-sharp text and barcodes when printed.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let frontCanvas, backCanvas;
+        let activeSide = 'front';
+        let currentZoom = 1;
+        
+        let historyStates = { front: { stack: [], index: -1 }, back: { stack: [], index: -1 } };
+        let isHistoryAction = false;
+        
+        const standardDims = { 'cr80-v': { w: 639, h: 1014 }, 'cr80-h': { w: 1014, h: 639 } };
+        const googleFonts = ['Inter', 'Poppins', 'Oswald', 'Playfair Display', 'Roboto Mono'];
+
+        // --- Initialization ---
+        window.onload = function() {
+            fabric.Object.prototype.set({ transparentCorners: false, cornerColor: '#0ea5e9', borderColor: '#0ea5e9', cornerSize: 10, cornerStyle: 'circle' });
+            
+            frontCanvas = new fabric.Canvas('frontCanvas', { preserveObjectStacking: true });
+            backCanvas = new fabric.Canvas('backCanvas', { preserveObjectStacking: true });
+            
+            setupCanvasListeners(frontCanvas, 'front');
+            setupCanvasListeners(backCanvas, 'back');
+
+            populateFontDropdown();
+            populateColorPalette();
+            populateIcons();
+            populatePatterns();
+
+            window.addEventListener('keydown', handleKeydowns);
+        };
+
+        function setupCanvasListeners(c, side) {
+            c.on('selection:created', updatePropsPanel);
+            c.on('selection:updated', updatePropsPanel);
+            c.on('selection:cleared', clearPropsPanel);
+            c.on('object:modified', () => saveHistory(side));
+            c.on('object:added', () => { if(!isHistoryAction) saveHistory(side); updateLayersPanel(); });
+            c.on('object:removed', () => { if(!isHistoryAction) saveHistory(side); updateLayersPanel(); });
+            c.on('object:moving', handleSnapping);
+        }
+
+        function getActiveCanvas() { return activeSide === 'front' ? frontCanvas : backCanvas; }
+
+        // --- Views ---
+        function startWorkspace(sizeMode) {
+            let w, h;
+            if(sizeMode === 'custom') {
+                w = parseInt(document.getElementById('inpCustW').value); h = parseInt(document.getElementById('inpCustH').value);
+                if(w < 100 || h < 100) return alert("Size too small.");
+            } else { w = standardDims[sizeMode].w; h = standardDims[sizeMode].h; }
+
+            frontCanvas.setWidth(w); frontCanvas.setHeight(h); frontCanvas.backgroundColor = '#ffffff';
+            backCanvas.setWidth(w); backCanvas.setHeight(h); backCanvas.backgroundColor = '#ffffff';
+
+            document.getElementById('heroLandingView').classList.add('hidden');
+            
+            const wrapper = document.getElementById('workspaceViewport');
+            const availableW = wrapper.clientWidth - 100;
+            const availableH = wrapper.clientHeight - 100;
+            currentZoom = Math.min(availableW / w, availableH / h);
+            if(currentZoom > 1) currentZoom = 1;
+            applyZoom();
+
+            renderTemplates('Primary School'); 
+            saveHistory('front'); saveHistory('back');
+        }
+
+        function confirmReset() {
+            if(confirm("Erase completely and return to start screen?")) {
+                frontCanvas.clear(); backCanvas.clear();
+                historyStates = { front: { stack: [], index: -1 }, back: { stack: [], index: -1 } };
+                document.getElementById('heroLandingView').classList.remove('hidden');
+            }
+        }
+
+        function toggleCustomSizeInput() { document.getElementById('customSizeEntryBox').classList.toggle('hidden'); }
+        function simulateBulkUpload() { alert("Demo Mode: CSV Bulk Upload logic triggered."); }
+        function toggleGuideModal(show) { document.getElementById('guideModal').style.display = show ? 'flex' : 'none'; }
+
+        function openSidebarTab(tabId, el) {
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active')); el.classList.add('active');
+            document.querySelectorAll('.drawer-panel > div[id^="tab-"]').forEach(d => { d.classList.add('hidden'); d.classList.remove('block'); });
+            const t = document.getElementById(tabId); t.classList.remove('hidden'); t.classList.add('block');
+            if(tabId === 'tab-layers') updateLayersPanel();
+        }
+
+        function switchCanvasSide(side) {
+            activeSide = side;
+            document.getElementById('btnViewFront').className = side === 'front' ? "px-6 py-1.5 rounded-md text-xs font-bold bg-cyan-600 text-white shadow-sm transition" : "px-6 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition";
+            document.getElementById('btnViewBack').className = side === 'back' ? "px-6 py-1.5 rounded-md text-xs font-bold bg-cyan-600 text-white shadow-sm transition" : "px-6 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-white transition";
+            
+            if(side === 'front') { document.getElementById('frontCanvasWrapper').classList.remove('hidden'); document.getElementById('backCanvasWrapper').classList.add('hidden'); } 
+            else { document.getElementById('frontCanvasWrapper').classList.add('hidden'); document.getElementById('backCanvasWrapper').classList.remove('hidden'); }
+            
+            updateLayersPanel(); clearPropsPanel();
+            getActiveCanvas().discardActiveObject(); getActiveCanvas().requestRenderAll();
+        }
+
+        function zoomWorkspace(delta) {
+            currentZoom += delta;
+            if(currentZoom < 0.2) currentZoom = 0.2;
+            if(currentZoom > 3) currentZoom = 3;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            document.getElementById('zoomLevelDisplay').innerText = Math.round(currentZoom * 100) + '%';
+            document.getElementById('zoomableContainer').style.transform = `scale(${currentZoom})`;
+        }
+
+        function saveHistory(side) {
+            const h = historyStates[side]; const c = side === 'front' ? frontCanvas : backCanvas;
+            const json = JSON.stringify(c.toJSON(['id']));
+            if(h.index < h.stack.length - 1) h.stack = h.stack.slice(0, h.index + 1);
+            if(h.index >= 0 && h.stack[h.index] === json) return;
+            h.stack.push(json); h.index++;
+            if(h.stack.length > 30) { h.stack.shift(); h.index--; }
+        }
+
+        function actionUndo() {
+            const h = historyStates[activeSide]; const c = getActiveCanvas();
+            if(h.index > 0) { isHistoryAction = true; h.index--; c.loadFromJSON(h.stack[h.index], () => { c.renderAll(); isHistoryAction = false; clearPropsPanel(); updateLayersPanel(); }); }
+        }
+        function actionRedo() {
+            const h = historyStates[activeSide]; const c = getActiveCanvas();
+            if(h.index < h.stack.length - 1) { isHistoryAction = true; h.index++; c.loadFromJSON(h.stack[h.index], () => { c.renderAll(); isHistoryAction = false; clearPropsPanel(); updateLayersPanel(); }); }
+        }
+
+        function handleSnapping(options) {
+            if(!document.getElementById('snapGridToggle').checked) return;
+            const grid = 20; const obj = options.target;
+            obj.set({ left: Math.round(obj.left/grid)*grid, top: Math.round(obj.top/grid)*grid });
+        }
+
+        // --- 100+ TEMPLATES GENERATION ENGINE ---
+        function renderTemplates(category) {
+            const grid = document.getElementById('templateListGrid'); grid.innerHTML = '';
+            
+            // 16 specific premium ID card colors
+            const colors = ['#0ea5e9', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981', '#f43f5e', '#3b82f6', '#14b8a6', '#84cc16', '#6366f1', '#a855f7', '#d946ef', '#0f172a', '#475569', '#059669', '#dc2626'];
+            // 7 Layout variations
+            const layouts = [1, 2, 3, 4, 5, 6, 7]; 
+            
+            let totalCount = 0;
+            
+            colors.forEach((c) => {
+                layouts.forEach((layoutVer) => {
+                    totalCount++;
+                    const box = document.createElement('div');
+                    box.className = "aspect-[2.13/3.38] bg-white rounded cursor-pointer border border-slate-700 hover:border-cyan-400 overflow-hidden relative group";
+                    box.onclick = () => applyTemplate(c, category, layoutVer);
+                    
+                    let innerHTML = '';
+                    if(layoutVer === 1) { innerHTML = `<div style="background:${c}; width:100%; height:25%;"></div><div style="width:40%; padding-bottom:40%; border-radius:50%; background:#e2e8f0; border:2px solid white; position:absolute; top:15%; left:50%; transform:translateX(-50%);"></div><div style="background:${c}; width:100%; height:10%; position:absolute; bottom:0;"></div>`; } 
+                    else if(layoutVer === 2) { innerHTML = `<div style="background:${c}; width:30%; height:100%; position:absolute; left:0;"></div><div style="width:40%; padding-bottom:40%; background:#e2e8f0; position:absolute; top:10%; right:15%;"></div>`; } 
+                    else if(layoutVer === 3) { innerHTML = `<div style="background:#0f172a; width:100%; height:100%;"></div><div style="width:100%; height:8px; background:${c}; position:absolute; top:35%;"></div>`; } 
+                    else if(layoutVer === 4) { innerHTML = `<div style="border:4px solid ${c}; width:90%; height:94%; margin:5% auto; position:relative;"></div>`; } 
+                    else if(layoutVer === 5) { innerHTML = `<div style="background:${c}; width:150%; padding-bottom:150%; border-radius:50%; position:absolute; top:-100%; left:-25%;"></div>`; } 
+                    else if(layoutVer === 6) { innerHTML = `<div style="background:linear-gradient(135deg, ${c}, #ffffff); width:100%; height:100%;"></div>`; } 
+                    else if(layoutVer === 7) { innerHTML = `<div style="background:${c}; width:10%; height:100%; position:absolute; left:5%;"></div>`; }
+                    
+                    box.innerHTML = innerHTML + `<div class="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center text-[10px] text-white font-bold p-2 text-center transition backdrop-blur-sm">Apply<br>${category}<br>Layout ${layoutVer}</div>`;
+                    grid.appendChild(box);
+                });
+            });
+            
+            document.getElementById('totalTemplateCount').innerText = `${totalCount} Designs Loaded`;
+        }
+
+        function applyTemplate(mainColor, category, layoutVersion) {
+            const c = getActiveCanvas(); c.clear(); c.backgroundColor = '#ffffff';
+            const w = c.width; const h = c.height;
+
+            if(layoutVersion === 1) {
+                c.add(new fabric.Rect({ left:0, top:0, width:w, height:h*0.25, fill:mainColor, selectable:false }));
+                c.add(new fabric.Rect({ left:0, top:h*0.9, width:w, height:h*0.1, fill:mainColor, selectable:false }));
+                c.add(new fabric.Circle({ left:w/2, top:h*0.25, originX:'center', originY:'center', radius:w*0.2, fill:'#e2e8f0', stroke:'white', strokeWidth:4 }));
+                c.add(new fabric.IText(category.toUpperCase(), { left:w/2, top:h*0.1, originX:'center', fontFamily:'Oswald', fontSize:w*0.07, fill:'white', fontWeight:'bold' }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w/2, top:h*0.55, originX:'center', fontFamily:'Poppins', fontSize:w*0.08, fill:'#0f172a', fontWeight:'bold' }));
+                c.add(new fabric.IText('ID: STU-88902\nDOB: 15-08-2005\nBlood: O+', { left:w/2, top:h*0.7, originX:'center', fontFamily:'Roboto Mono', fontSize:w*0.04, fill:'#334155', textAlign:'center' }));
+            } 
+            else if(layoutVersion === 2) {
+                c.add(new fabric.Rect({ left:0, top:0, width:w*0.3, height:h, fill:mainColor, selectable:false }));
+                c.add(new fabric.Rect({ left:w*0.7, top:h*0.2, originX:'center', originY:'center', width:w*0.4, height:w*0.4, fill:'#e2e8f0', rx:10, ry:10 }));
+                c.add(new fabric.IText(category.toUpperCase(), { left:w*0.15, top:h/2, originX:'center', originY:'center', angle:-90, fontFamily:'Oswald', fontSize:w*0.08, fill:'white', fontWeight:'bold' }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w*0.4, top:h*0.5, fontFamily:'Poppins', fontSize:w*0.07, fill:mainColor, fontWeight:'bold' }));
+                c.add(new fabric.IText('Class: X-A', { left:w*0.4, top:h*0.6, fontFamily:'Poppins', fontSize:w*0.04, fill:'#64748b' }));
+            }
+            else if(layoutVersion === 3) {
+                c.backgroundColor = '#0f172a';
+                c.add(new fabric.Rect({ left:0, top:h*0.35, width:w, height:w*0.02, fill:mainColor, selectable:false }));
+                c.add(new fabric.Circle({ left:w/2, top:h*0.2, originX:'center', originY:'center', radius:w*0.15, fill:'#1e293b', stroke:mainColor, strokeWidth:3 }));
+                c.add(new fabric.IText(category.toUpperCase(), { left:w/2, top:h*0.45, originX:'center', fontFamily:'Inter', fontSize:w*0.06, fill:'white', fontWeight:'bold', charSpacing:100 }));
+                c.add(new fabric.IText('JOHN DOE', { left:w/2, top:h*0.55, originX:'center', fontFamily:'Poppins', fontSize:w*0.08, fill:mainColor, fontWeight:'bold' }));
+            }
+            else if(layoutVersion === 4) {
+                c.add(new fabric.Rect({ left:w*0.05, top:h*0.05, width:w*0.9, height:h*0.9, fill:'transparent', stroke:mainColor, strokeWidth:5, selectable:false }));
+                c.add(new fabric.IText(category.toUpperCase(), { left:w/2, top:h*0.1, originX:'center', fontFamily:'Playfair Display', fontSize:w*0.06, fill:mainColor, fontWeight:'bold' }));
+                c.add(new fabric.Rect({ left:w/2, top:h*0.3, originX:'center', originY:'center', width:w*0.5, height:w*0.6, fill:'#e2e8f0', stroke:mainColor, strokeWidth:2 }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w/2, top:h*0.6, originX:'center', fontFamily:'Inter', fontSize:w*0.07, fill:'#0f172a', fontWeight:'bold' }));
+            }
+            else if(layoutVersion === 5) {
+                c.add(new fabric.Circle({ left:w/2, top:-w*0.5, originX:'center', originY:'center', radius:w, fill:mainColor, selectable:false }));
+                c.add(new fabric.Circle({ left:w/2, top:h*0.2, originX:'center', originY:'center', radius:w*0.2, fill:'#e2e8f0', stroke:'white', strokeWidth:6 }));
+                c.add(new fabric.IText(category, { left:w/2, top:h*0.05, originX:'center', fontFamily:'Poppins', fontSize:w*0.06, fill:'white', fontWeight:'bold' }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w/2, top:h*0.45, originX:'center', fontFamily:'Poppins', fontSize:w*0.08, fill:mainColor, fontWeight:'bold' }));
+            }
+            else if(layoutVersion === 6) {
+                const gradRect = new fabric.Rect({ left:0, top:0, width:w, height:h, fill:mainColor, opacity:0.8, selectable:false });
+                c.add(gradRect);
+                c.add(new fabric.Circle({ left:w/2, top:h*0.3, originX:'center', originY:'center', radius:w*0.2, fill:'#ffffff' }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w/2, top:h*0.6, originX:'center', fontFamily:'Poppins', fontSize:w*0.08, fill:'white', fontWeight:'bold' }));
+            }
+            else if(layoutVersion === 7) {
+                c.add(new fabric.Rect({ left:w*0.05, top:0, width:w*0.05, height:h, fill:mainColor, selectable:false }));
+                c.add(new fabric.Rect({ left:w*0.55, top:h*0.25, originX:'center', originY:'center', width:w*0.4, height:w*0.45, fill:'#e2e8f0', rx:10, ry:10 }));
+                c.add(new fabric.IText(category.toUpperCase(), { left:w*0.15, top:h*0.1, fontFamily:'Oswald', fontSize:w*0.07, fill:mainColor, fontWeight:'bold' }));
+                c.add(new fabric.IText('STUDENT NAME', { left:w*0.15, top:h*0.6, fontFamily:'Poppins', fontSize:w*0.07, fill:'#0f172a', fontWeight:'bold' }));
+                c.add(new fabric.IText('ID: STU-88902\nDOB: 15-08-2005', { left:w*0.15, top:h*0.7, fontFamily:'Roboto Mono', fontSize:w*0.035, fill:'#334155' }));
+            }
+
+            c.renderAll(); saveHistory(activeSide);
+        }
+
+        // --- Elements ---
+        function addCanvasText(content, size, weight, color='#0f172a') {
+            const t = new fabric.IText(content, { fontFamily: 'Poppins', fontSize: size, fontWeight: weight, fill: color, left: getActiveCanvas().width/2, top: getActiveCanvas().height/2, originX: 'center', originY: 'center', textAlign: 'center' });
+            getActiveCanvas().add(t); getActiveCanvas().setActiveObject(t);
+        }
+
+        function addShape(type) {
+            const c = getActiveCanvas(); let obj;
+            const base = { fill: '#334155', left: c.width/2, top: c.height/2, originX: 'center', originY: 'center' };
+            if(type==='rect') obj = new fabric.Rect({...base, width: 200, height: 200});
+            else if(type==='circle') obj = new fabric.Circle({...base, radius: 100});
+            else if(type==='line') obj = new fabric.Line([0,0,300,0], {...base, stroke: '#334155', strokeWidth: 5});
+            if(obj) { c.add(obj); c.setActiveObject(obj); }
+        }
+
+        let currentStudentPhotoUrl = null;
+        function handleStudentPhotoUpload(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                currentStudentPhotoUrl = f.target.result;
+                document.getElementById('photoMaskingTools').classList.remove('opacity-50', 'pointer-events-none');
+                applyPhotoMask('square'); 
+            };
+            reader.readAsDataURL(file); e.target.value = '';
+        }
+
+        function applyPhotoMask(shapeType) {
+            if(!currentStudentPhotoUrl) return;
+            const c = getActiveCanvas();
+            fabric.Image.fromURL(currentStudentPhotoUrl, function(img) {
+                const tarSize = 250; img.scaleToWidth(tarSize);
+                let clipPath;
+                if(shapeType === 'square') { clipPath = new fabric.Rect({ width: tarSize, height: tarSize, originX: 'center', originY: 'center' }); }
+                else if(shapeType === 'rounded') { clipPath = new fabric.Rect({ width: tarSize, height: tarSize, rx: 30, ry: 30, originX: 'center', originY: 'center' }); }
+                else if(shapeType === 'circle') { clipPath = new fabric.Circle({ radius: tarSize/2, originX: 'center', originY: 'center' }); }
+                else if(shapeType === 'oval') { clipPath = new fabric.Ellipse({ rx: tarSize/2.5, ry: tarSize/1.8, originX: 'center', originY: 'center' }); }
+                img.set({ left: c.width/2, top: c.height/2, originX: 'center', originY: 'center', clipPath: clipPath, id: 'studentPhoto' });
+                c.getObjects().forEach(o => { if(o.id === 'studentPhoto') c.remove(o); });
+                c.add(img); c.setActiveObject(img);
+            });
+        }
+        function updatePhotoBorder() {} 
+
+        function generateQRCode() {
+            const data = document.getElementById('qrDataInput').value; if(!data) return;
+            const url = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
+            fabric.Image.fromURL(url, function(img) {
+                img.set({ left: getActiveCanvas().width/2, top: getActiveCanvas().height/2, originX: 'center', originY: 'center' });
+                getActiveCanvas().add(img); getActiveCanvas().setActiveObject(img);
+            }, { crossOrigin: 'anonymous' });
+        }
+        
+        function generateBarcode() {
+            const data = document.getElementById('barcodeDataInput').value; if(!data) return;
+            const url = `https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(data)}&code=Code128&translate-esc=on`;
+            fabric.Image.fromURL(url, function(img) {
+                img.set({ left: getActiveCanvas().width/2, top: getActiveCanvas().height/2, originX: 'center', originY: 'center' });
+                getActiveCanvas().add(img); getActiveCanvas().setActiveObject(img);
+            }, { crossOrigin: 'anonymous' });
+        }
+
+        function setCanvasBackground(color) {
+            getActiveCanvas().backgroundColor = color; getActiveCanvas().requestRenderAll();
+            document.getElementById('bgHexDisplay').innerText = color; saveHistory(activeSide);
+        }
+        
+        function populateColorPalette() {
+            const palette = ['#ffffff', '#f8fafc', '#0f172a', '#e11d48', '#ea580c', '#d97706', '#16a34a', '#0d9488', '#0284c7', '#2563eb', '#4f46e5', '#9333ea'];
+            const trg = document.getElementById('quickColorGrid');
+            palette.forEach(c => {
+                const b = document.createElement('button'); b.className = "aspect-square rounded border border-slate-700 hover:scale-110 transition"; b.style.backgroundColor = c;
+                b.onclick = () => setCanvasBackground(c); trg.appendChild(b);
+            });
+        }
+        
+        function populatePatterns() {
+            const trg = document.getElementById('securityPatternsGrid');
+            const p = [
+                {n:'Guilloche Tech', v:'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 20c10 0 10-10 20-10s10 10 20 10-10 10-20 10S10 20 0 20z\' stroke=\'%230ea5e9\' stroke-width=\'0.5\' fill=\'none\' opacity=\'0.3\'/%3E%3C/svg%3E")'},
+                {n:'Security Grid', v:'url("data:image/svg+xml,%3Csvg width=\'10\' height=\'10\' viewBox=\'0 0 10 10\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M10 0L0 10M0 0l10 10\' stroke=\'%2394a3b8\' stroke-width=\'0.2\' fill=\'none\' opacity=\'0.3\'/%3E%3C/svg%3E")'}
+            ];
+            p.forEach(x => {
+                const b = document.createElement('button'); b.className = "bg-slate-800 border border-slate-700 py-2 rounded text-[10px] text-slate-300 hover:bg-slate-700"; b.innerText = x.n;
+                b.onclick = () => { 
+                    getActiveCanvas().backgroundColor = 'transparent'; document.getElementById(activeSide+'CanvasWrapper').style.backgroundImage = x.v;
+                    getActiveCanvas().requestRenderAll(); saveHistory(activeSide);
+                };
+                trg.appendChild(b);
+            });
+        }
+
+        function populateIcons() {
+            const trg = document.getElementById('badgeIconsGrid');
+            const icons = ['fa-shield-halved', 'fa-award', 'fa-graduation-cap', 'fa-building-columns', 'fa-certificate', 'fa-id-badge', 'fa-user-graduate', 'fa-book-open'];
+            icons.forEach(ic => {
+                const b = document.createElement('button'); b.className = "panel-btn flex items-center justify-center py-3"; b.innerHTML = `<i class="fa-solid ${ic} text-xl"></i>`;
+                b.onclick = () => {
+                    const t = new fabric.Text('\uf0a3', { fontFamily: '"Font Awesome 6 Free"', fontWeight: 900, fontSize: 80, fill: '#cbd5e1', left: getActiveCanvas().width/2, top: getActiveCanvas().height/2, originX: 'center', originY: 'center' });
+                    const map = {'fa-shield-halved':'\uf3ed', 'fa-award':'\uf559', 'fa-graduation-cap':'\uf19d', 'fa-building-columns':'\uf19c', 'fa-certificate':'\uf0a3', 'fa-id-badge':'\uf2c1', 'fa-user-graduate':'\uf501', 'fa-book-open':'\uf518'};
+                    t.set('text', map[ic]); getActiveCanvas().add(t); getActiveCanvas().setActiveObject(t);
+                };
+                trg.appendChild(b);
+            });
+        }
+
+        function populateFontDropdown() {
+            const s = document.getElementById('propFontFamily');
+            googleFonts.forEach(f => { const o = document.createElement('option'); o.value = f; o.text = f; s.appendChild(o); });
+        }
+
+        function updatePropsPanel(e) {
+            const obj = getActiveCanvas().getActiveObject();
+            if(!obj) { clearPropsPanel(); return; }
+            
+            document.getElementById('noSelectionState').classList.add('hidden');
+            document.getElementById('commonActionGroup').classList.remove('hidden');
+            document.getElementById('propOpacity').value = obj.opacity || 1;
+            document.getElementById('lblOpacity').innerText = Math.round((obj.opacity||1)*100)+'%';
+
+            document.getElementById('textPropsGroup').classList.add('hidden');
+            document.getElementById('graphicPropsGroup').classList.add('hidden');
+
+            if(obj.type === 'i-text' || obj.type === 'text') {
+                document.getElementById('textPropsGroup').classList.remove('hidden');
+                document.getElementById('propFontFamily').value = obj.fontFamily;
+                document.getElementById('propFontSize').value = Math.round(obj.fontSize);
+                document.getElementById('propTextColor').value = obj.fill;
+                document.getElementById('propCharSpace').value = obj.charSpacing || 0;
+                document.getElementById('lblCharSpace').innerText = obj.charSpacing || 0;
+                document.getElementById('propLineHeight').value = obj.lineHeight || 1.2;
+                document.getElementById('lblLineHeight').innerText = parseFloat(obj.lineHeight||1.2).toFixed(1);
+                
+                document.getElementById('btnBold').classList.toggle('active', obj.fontWeight==='bold');
+                document.getElementById('btnItalic').classList.toggle('active', obj.fontStyle==='italic');
+                document.getElementById('btnUnderline').classList.toggle('active', obj.underline);
+                ['L','C','R'].forEach(a => document.getElementById('btnAlign'+a).classList.remove('active'));
+                if(obj.textAlign === 'left') document.getElementById('btnAlignL').classList.add('active');
+                if(obj.textAlign === 'center') document.getElementById('btnAlignC').classList.add('active');
+                if(obj.textAlign === 'right') document.getElementById('btnAlignR').classList.add('active');
+            } else {
+                document.getElementById('graphicPropsGroup').classList.remove('hidden');
+                document.getElementById('propFill').value = obj.fill || '#000000';
+                document.getElementById('propStroke').value = obj.stroke || '#000000';
+                
+                if(obj.type === 'rect') {
+                    document.getElementById('radiusControl').classList.remove('hidden');
+                    document.getElementById('propRadius').value = obj.rx || 0;
+                    document.getElementById('lblRadius').innerText = obj.rx || 0;
+                } else { document.getElementById('radiusControl').classList.add('hidden'); }
+            }
+        }
+
+        function clearPropsPanel() {
+            document.getElementById('noSelectionState').classList.remove('hidden');
+            document.getElementById('textPropsGroup').classList.add('hidden');
+            document.getElementById('graphicPropsGroup').classList.add('hidden');
+            document.getElementById('commonActionGroup').classList.add('hidden');
+        }
+
+        function updateObj(prop, val) { const obj = getActiveCanvas().getActiveObject(); if(obj) { obj.set(prop, val); getActiveCanvas().requestRenderAll(); saveHistory(activeSide); } }
+        function toggleObjProp(prop, vTrue, vFalse) { const obj = getActiveCanvas().getActiveObject(); if(obj) { obj.set(prop, obj[prop]===vTrue ? vFalse : vTrue); getActiveCanvas().requestRenderAll(); saveHistory(activeSide); updatePropsPanel(); } }
+        function deleteActiveObject() { const c = getActiveCanvas(); const objs = c.getActiveObjects(); if(objs.length) { objs.forEach(o => c.remove(o)); c.discardActiveObject(); c.requestRenderAll(); clearPropsPanel(); } }
+        function objBringFront() { const c = getActiveCanvas(); const o = c.getActiveObject(); if(o) { c.bringToFront(o); updateLayersPanel(); } }
+        function objSendBack() { const c = getActiveCanvas(); const o = c.getActiveObject(); if(o) { c.sendToBack(o); updateLayersPanel(); } }
+
+        function clearSelection(e) { if(e.target.id==='workspaceViewport' || e.target.id==='zoomableContainer') { getActiveCanvas().discardActiveObject(); getActiveCanvas().requestRenderAll(); clearPropsPanel(); } }
+
+        function updateLayersPanel() {
+            const list = document.getElementById('layersPanelList'); if(!list) return; list.innerHTML = '';
+            const c = getActiveCanvas(); const objs = c.getObjects();
+            for(let i=objs.length-1; i>=0; i--) {
+                const obj = objs[i]; const d = document.createElement('div');
+                d.className = "flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700 cursor-pointer hover:border-cyan-500 text-slate-300";
+                let n = 'Shape', ic = 'fa-shapes';
+                if(obj.type.includes('text')) { n=obj.text.substring(0,10)+'...'; ic='fa-font'; } else if(obj.type==='image') { n='Image'; ic='fa-image'; }
+                d.innerHTML = `<div class="flex items-center gap-2 text-[10px]" onclick="selectLayer(${i})"><i class="fa-solid ${ic} w-4"></i> ${n}</div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="moveLayerInCanvas(${i}, 1)" class="w-6 h-6 rounded hover:bg-slate-700 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-angle-up text-[10px]"></i></button>
+                        <button onclick="moveLayerInCanvas(${i}, -1)" class="w-6 h-6 rounded hover:bg-slate-700 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-angle-down text-[10px]"></i></button>
+                    </div>`;
+                if(c.getActiveObject() === obj) d.classList.add('border-cyan-500', 'bg-slate-700', 'text-cyan-400');
+                list.appendChild(d);
+            }
+        }
+        function selectLayer(i) { const c = getActiveCanvas(); const obj = c.item(i); if(obj) { c.setActiveObject(obj); c.requestRenderAll(); updateLayersPanel(); } }
+        function moveLayerInCanvas(index, dir) {
+            const c = getActiveCanvas(); const obj = c.item(index); if(!obj) return;
+            if(dir === 1 && index < c.getObjects().length - 1) c.moveTo(obj, index + 1);
+            else if (dir === -1 && index > 0) c.moveTo(obj, index - 1);
+            c.requestRenderAll(); saveHistory(activeSide);
+        }
+
+        // --- Export / Print Logic ---
+        function downloadSingleCard(format) {
+            const c = getActiveCanvas(); c.discardActiveObject(); c.requestRenderAll();
+            const data = c.toDataURL({ format: format==='png'?'png':'jpeg', quality: 1 });
+            if(format === 'pdf') {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF(c.width > c.height ? 'l' : 'p', 'px', [c.width, c.height]);
+                pdf.addImage(data, 'JPEG', 0, 0, c.width, c.height);
+                pdf.save(`ID_Card_${Date.now()}.pdf`);
+            } else {
+                const link = document.createElement('a'); link.download = `ID_Card_${Date.now()}.${format}`; link.href = data; link.click();
+            }
+        }
+
+        async function generateSheetPrint() {
+            frontCanvas.discardActiveObject(); frontCanvas.requestRenderAll();
+            const fData = frontCanvas.toDataURL({ format: 'jpeg', quality: 1 });
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            const w = frontCanvas.width > frontCanvas.height ? 86 : 54;
+            const h = frontCanvas.width > frontCanvas.height ? 54 : 86;
+            
+            const startX = 20; const startY = 15;
+            const spaceX = 10; const spaceY = 10;
+            
+            for(let row=0; row<4; row++) {
+                for(let col=0; col<2; col++) {
+                    const x = startX + (col * (w + spaceX));
+                    const y = startY + (row * (h + spaceY));
+                    pdf.addImage(fData, 'JPEG', x, y, w, h);
+                    pdf.setDrawColor(200); pdf.setLineWidth(0.2);
+                    pdf.line(x-2, y, x+2, y); pdf.line(x, y-2, x, y+2); 
+                    pdf.line(x+w-2, y, x+w+2, y); pdf.line(x+w, y-2, x+w, y+2); 
+                }
+            }
+            pdf.save(`ID_Batch_PrintSheet.pdf`);
+        }
+
+        function handleKeydowns(e) {
+            if(e.key === 'Delete' || e.key === 'Backspace') { if(document.activeElement.tagName !== 'INPUT') deleteActiveObject(); }
+        }
+    </script>
+</body>
+</html>

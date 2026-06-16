@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Pro Design Studio - Print Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; overflow: hidden; margin: 0; padding: 0; }
+        
+        /* Premium Wide Dark Sidebar */
+        .sidebar { background-color: #1e1e2d; height: 100vh; overflow-y: auto; color: #9899ac; }
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #323248; border-radius: 10px; }
+        
+        .side-btn { transition: all 0.2s; cursor: pointer; display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; font-weight: 600; font-size: 13px; }
+        .side-btn:hover { background-color: #2b2b40; color: #ffffff; }
+        .side-btn.active { background-color: #6366f1; color: #ffffff; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
+        .side-btn i { font-size: 18px; width: 24px; text-align: center; margin-right: 12px; }
+
+        .category-title { font-size: 11px; font-weight: 800; color: #565674; text-transform: uppercase; letter-spacing: 1px; margin: 24px 0 12px 16px; }
+
+        /* Top Filter Bar */
+        .filter-btn { border: 1px solid #e2e8f0; color: #64748b; padding: 6px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s; background: white; text-transform: capitalize; font-weight: 600; }
+        .filter-btn:hover { border-color: #94a3b8; background: #f8fafc; }
+        .filter-btn.active { border-color: #6366f1; color: #ffffff; background: #6366f1; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3); }
+
+        /* Template Cards */
+        .template-card { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; background: white; display: flex; flex-direction: column; }
+        .template-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-color: #6366f1; }
+        .template-preview { width: 100%; height: 200px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+
+        /* Editor Workspace */
+        .workspace-bg { background-color: #e2e8f0; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 40px; }
+        .canvas-container { position: relative; background: white; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform-origin: top center; overflow: hidden; }
+        
+        /* Editable Canvas Nodes */
+        .canvas-node { position: absolute; box-sizing: border-box; }
+        .canvas-node.draggable { cursor: move; }
+        .canvas-node.selected { box-shadow: 0 0 0 2px #f97316; z-index: 999 !important; }
+        
+        .edit-text { cursor: text; outline: none; white-space: nowrap; padding: 2px 4px; border: 1px dashed transparent; }
+        .edit-text:hover { border-color: #cbd5e1; }
+        .edit-text:focus { border-color: #f97316; background: rgba(255,255,255,0.9); }
+        
+        .image-node { border: 1px dashed transparent; }
+        .image-node:hover { border-color: #cbd5e1; }
+        .edit-image { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        
+        .shape-node { border: 1px dashed transparent; }
+        .shape-node:hover { border-color: #cbd5e1; }
+        
+        /* Resize Handles */
+        .resize-handle { position: absolute; width: 12px; height: 12px; background: #f97316; right: -6px; bottom: -6px; cursor: se-resize; border-radius: 50%; display: none; z-index: 1000; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .selected .resize-handle { display: block; }
+    </style>
+</head>
+<body class="flex h-screen w-full">
+
+    <!-- LEFT SIDEBAR (All Options Added) -->
+    <aside class="sidebar w-64 flex-shrink-0 flex flex-col z-20 shadow-2xl">
+        <div class="h-16 border-b border-[#2b2b40] flex items-center px-6 bg-[#1e1e2d] sticky top-0 z-10">
+            <a href="index.html" class="text-white hover:text-[#6366f1] mr-3 transition"><i class="fa-solid fa-arrow-left"></i></a>
+            <h2 class="text-white font-black text-lg flex items-center gap-2"><i class="fa-solid fa-layer-group text-indigo-500"></i> Print Hub</h2>
+        </div>
+
+        <div class="p-4 flex flex-col pb-20">
+            <!-- LOGO -->
+            <div class="category-title">Logo</div>
+            <div class="flex flex-col">
+                <div onclick="loadCategory('Text logo')" class="side-btn" id="cat_Text logo"><i class="fa-solid fa-font"></i><span>Text logo</span></div>
+                <div onclick="loadCategory('Graphic logo')" class="side-btn" id="cat_Graphic logo"><i class="fa-solid fa-icons"></i><span>Graphic logo</span></div>
+                <div onclick="loadCategory('Motion logo')" class="side-btn" id="cat_Motion logo"><i class="fa-solid fa-video"></i><span>Motion logo</span></div>
+            </div>
+
+            <!-- BUSINESS -->
+            <div class="category-title">Business</div>
+            <div class="flex flex-col">
+                <div onclick="loadCategory('Business card')" class="side-btn" id="cat_Business card"><i class="fa-solid fa-address-card"></i><span>Business card</span></div>
+                <div onclick="loadCategory('Certificate')" class="side-btn" id="cat_Certificate"><i class="fa-solid fa-certificate"></i><span>Certificate</span></div>
+                <div onclick="loadCategory('Resume')" class="side-btn" id="cat_Resume"><i class="fa-solid fa-file-user"></i><span>Resume</span></div>
+                <div onclick="loadCategory('Greeting card')" class="side-btn" id="cat_Greeting card"><i class="fa-solid fa-gift"></i><span>Greeting card</span></div>
+                <div onclick="loadCategory('Invitation card')" class="side-btn" id="cat_Invitation card"><i class="fa-solid fa-envelope-open-text"></i><span>Invitation card</span></div>
+                <div onclick="loadCategory('Postcard')" class="side-btn" id="cat_Postcard"><i class="fa-regular fa-image"></i><span>Postcard</span></div>
+                <div onclick="loadCategory('Label')" class="side-btn" id="cat_Label"><i class="fa-solid fa-tag"></i><span>Label</span></div>
+                <div onclick="loadCategory('Cover')" class="side-btn" id="cat_Cover"><i class="fa-solid fa-book"></i><span>Cover</span></div>
+                <div onclick="loadCategory('Report')" class="side-btn" id="cat_Report"><i class="fa-solid fa-chart-line"></i><span>Report</span></div>
+                <div onclick="loadCategory('Letter paper')" class="side-btn" id="cat_Letter paper"><i class="fa-solid fa-scroll"></i><span>Letter paper</span></div>
+                <div onclick="loadCategory('Invoice')" class="side-btn" id="cat_Invoice"><i class="fa-solid fa-file-invoice-dollar"></i><span>Invoice</span></div>
+                <div onclick="loadCategory('Email')" class="side-btn" id="cat_Email"><i class="fa-solid fa-at"></i><span>Email</span></div>
+                <div onclick="loadCategory('Newsletter')" class="side-btn" id="cat_Newsletter"><i class="fa-regular fa-newspaper"></i><span>Newsletter</span></div>
+                <div onclick="loadCategory('ID Card')" class="side-btn active" id="cat_ID Card"><i class="fa-solid fa-id-badge"></i><span>ID Card</span></div>
+                <div onclick="loadCategory('Infographic')" class="side-btn" id="cat_Infographic"><i class="fa-solid fa-chart-pie"></i><span>Infographic</span></div>
+            </div>
+
+            <!-- MARKETING -->
+            <div class="category-title">Marketing</div>
+            <div class="flex flex-col">
+                <div onclick="loadCategory('Gift card')" class="side-btn" id="cat_Gift card"><i class="fa-solid fa-credit-card"></i><span>Gift card</span></div>
+                <div onclick="loadCategory('Poster')" class="side-btn" id="cat_Poster"><i class="fa-solid fa-border-all"></i><span>Poster</span></div>
+                <div onclick="loadCategory('Menu')" class="side-btn" id="cat_Menu"><i class="fa-solid fa-utensils"></i><span>Menu</span></div>
+                <div onclick="loadCategory('Flyer')" class="side-btn" id="cat_Flyer"><i class="fa-solid fa-paper-plane"></i><span>Flyer</span></div>
+                <div onclick="loadCategory('Banner')" class="side-btn" id="cat_Banner"><i class="fa-solid fa-panorama"></i><span>Banner</span></div>
+                <div onclick="loadCategory('Brochure')" class="side-btn" id="cat_Brochure"><i class="fa-solid fa-map"></i><span>Brochure</span></div>
+                <div onclick="loadCategory('Booklet')" class="side-btn" id="cat_Booklet"><i class="fa-solid fa-book-open"></i><span>Booklet</span></div>
+                <div onclick="loadCategory('Catalog')" class="side-btn" id="cat_Catalog"><i class="fa-solid fa-images"></i><span>Catalog</span></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow flex flex-col bg-white h-screen overflow-hidden relative">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: TEMPLATE GALLERY -->
+        <!-- ========================================== -->
+        <div id="galleryView" class="w-full h-full flex flex-col">
+            <!-- Top Filters Bar -->
+            <div class="h-20 border-b border-gray-200 flex items-center px-8 gap-3 overflow-x-auto shrink-0 bg-white shadow-sm z-10">
+                <button onclick="filterTemplates('all')" class="filter-btn active"><i class="fa-solid fa-border-all mr-1"></i> All</button>
+                <button onclick="filterTemplates('black')" class="filter-btn"><span class="w-3 h-3 inline-block bg-gray-800 rounded-full mr-1"></span> Black</button>
+                <button onclick="filterTemplates('blue')" class="filter-btn"><span class="w-3 h-3 inline-block bg-blue-500 rounded-full mr-1"></span> Blue</button>
+                <button onclick="filterTemplates('brown')" class="filter-btn"><span class="w-3 h-3 inline-block bg-yellow-800 rounded-full mr-1"></span> Brown</button>
+                <button onclick="filterTemplates('gold')" class="filter-btn"><span class="w-3 h-3 inline-block bg-yellow-500 rounded-full mr-1"></span> Gold</button>
+                <button onclick="filterTemplates('green')" class="filter-btn"><span class="w-3 h-3 inline-block bg-green-500 rounded-full mr-1"></span> Green</button>
+                <button onclick="filterTemplates('orange')" class="filter-btn"><span class="w-3 h-3 inline-block bg-orange-500 rounded-full mr-1"></span> Orange</button>
+                <button onclick="filterTemplates('purple')" class="filter-btn"><span class="w-3 h-3 inline-block bg-purple-500 rounded-full mr-1"></span> Purple</button>
+                <button onclick="filterTemplates('red')" class="filter-btn"><span class="w-3 h-3 inline-block bg-red-500 rounded-full mr-1"></span> Red</button>
+                <button onclick="filterTemplates('yellow')" class="filter-btn"><span class="w-3 h-3 inline-block bg-yellow-300 rounded-full mr-1"></span> Yellow</button>
+            </div>
+
+            <!-- Gallery Grid -->
+            <div class="flex-grow overflow-y-auto p-8 bg-[#f8fafc]">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-black text-gray-800" id="galleryTitle">ID Card Templates</h1>
+                    <span class="bg-indigo-100 text-indigo-800 font-bold px-4 py-1.5 rounded-full text-sm shadow-sm" id="templateCount">Loading Designs...</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8" id="templatesGrid">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: ADVANCED LIVE EDITOR WORKSPACE -->
+        <!-- ========================================== -->
+        <div id="editorView" class="hidden w-full h-full flex flex-col">
+            
+            <!-- Editor Top Bar -->
+            <div class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeEditor()" class="text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 border border-gray-200"><i class="fa-solid fa-arrow-left"></i> Gallery</button>
+                    <div class="h-6 w-px bg-gray-300"></div>
+                    <span class="font-black text-gray-800" id="editorHeaderTitle">Design Editor</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Background Color Tool -->
+                    <div class="flex items-center gap-2 border-r pr-4 mr-2 border-gray-200">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Bg Color:</span>
+                        <input type="color" id="canvasBgColor" onchange="changeCanvasBg(this.value)" value="#ffffff" class="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0">
+                    </div>
+                    <!-- Zoom Controls -->
+                    <div class="flex items-center bg-gray-100 rounded-lg border border-gray-200">
+                        <button onclick="zoomCanvas(-0.1)" class="px-3 py-1 text-gray-600 hover:bg-gray-200 rounded-l-lg"><i class="fa-solid fa-minus"></i></button>
+                        <span id="zoomValue" class="px-3 text-sm font-bold w-14 text-center">100%</span>
+                        <button onclick="zoomCanvas(0.1)" class="px-3 py-1 text-gray-600 hover:bg-gray-200 rounded-r-lg"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <button onclick="exportDesign('png')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition shadow-md flex items-center gap-2"><i class="fa-solid fa-download"></i> Save</button>
+                    <button onclick="exportDesign('print')" class="bg-gray-900 hover:bg-black text-white px-6 py-2 rounded-lg font-bold text-sm transition shadow-md flex items-center gap-2"><i class="fa-solid fa-print"></i> Print</button>
+                </div>
+            </div>
+
+            <div class="flex-grow flex overflow-hidden">
+                <!-- Advanced Left Toolbar -->
+                <div class="w-72 bg-white border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto shadow-xl z-10">
+                    
+                    <div class="p-5 border-b border-gray-100">
+                        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Add Elements</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <button onclick="addTextNode('Heading', '32px', 'bold')" class="bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-400 rounded-xl py-3 flex flex-col items-center gap-2 text-gray-700 text-xs font-bold transition shadow-sm"><i class="fa-solid fa-heading text-xl text-indigo-500"></i> Heading</button>
+                            <button onclick="addTextNode('Subtext', '16px', 'normal')" class="bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-400 rounded-xl py-3 flex flex-col items-center gap-2 text-gray-700 text-xs font-bold transition shadow-sm"><i class="fa-solid fa-font text-xl text-blue-500"></i> Text</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <button onclick="addShapeNode('square')" class="bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-400 rounded-xl py-3 flex flex-col items-center gap-2 text-gray-700 text-xs font-bold transition shadow-sm"><i class="fa-solid fa-square text-xl text-orange-500"></i> Square</button>
+                            <button onclick="addShapeNode('circle')" class="bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-400 rounded-xl py-3 flex flex-col items-center gap-2 text-gray-700 text-xs font-bold transition shadow-sm"><i class="fa-solid fa-circle text-xl text-teal-500"></i> Circle</button>
+                        </div>
+                        <button onclick="document.getElementById('imageUpload').click()" class="w-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-600 hover:text-white rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-bold transition shadow-sm"><i class="fa-regular fa-image text-lg"></i> Upload Custom Image</button>
+                        <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="addImageNode(event)">
+                    </div>
+
+                    <!-- Enhanced Properties Panel -->
+                    <div id="propertiesPanel" class="p-5 opacity-30 pointer-events-none transition-opacity bg-gray-50 flex-grow">
+                        <h3 class="text-xs font-black text-indigo-800 uppercase tracking-widest mb-4 border-b pb-2 border-gray-200">Item Properties</h3>
+                        
+                        <!-- Layer Controls -->
+                        <div class="flex gap-2 mb-5">
+                            <button onclick="changeZIndex(1)" class="flex-1 bg-white border border-gray-300 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-100 flex items-center justify-center gap-1" title="Bring Forward"><i class="fa-solid fa-layer-group"></i> Up</button>
+                            <button onclick="changeZIndex(-1)" class="flex-1 bg-white border border-gray-300 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-100 flex items-center justify-center gap-1" title="Send Backward"><i class="fa-solid fa-layer-group opacity-50"></i> Down</button>
+                            <button onclick="duplicateNode()" class="flex-1 bg-indigo-50 text-indigo-600 border border-indigo-200 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-indigo-100 flex items-center justify-center gap-1" title="Duplicate"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+
+                        <!-- Text Tools -->
+                        <div id="textProps" class="space-y-4 hidden">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-600 uppercase mb-1 block">Font Size</label>
+                                <input type="range" id="fontSizeSlider" min="10" max="150" value="16" oninput="updateFontSize(this.value)" class="w-full accent-indigo-500">
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="flex-1">
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">Color</label>
+                                    <input type="color" id="fontColorPicker" onchange="updateColor(this.value)" class="w-full h-10 cursor-pointer rounded border border-gray-300 p-0">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">Align</label>
+                                    <div class="flex gap-1 h-10 bg-white border border-gray-300 rounded overflow-hidden">
+                                        <button onclick="updateAlign('left')" class="flex-1 hover:bg-gray-100 text-xs"><i class="fa-solid fa-align-left"></i></button>
+                                        <button onclick="updateAlign('center')" class="flex-1 hover:bg-gray-100 text-xs border-l border-r"><i class="fa-solid fa-align-center"></i></button>
+                                        <button onclick="updateAlign('right')" class="flex-1 hover:bg-gray-100 text-xs"><i class="fa-solid fa-align-right"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Tools -->
+                        <div id="imgProps" class="space-y-4 hidden">
+                            <button onclick="document.getElementById('imageReplace').click()" class="w-full bg-white text-indigo-600 border border-indigo-200 py-2.5 rounded-lg text-xs font-bold shadow-sm transition hover:bg-indigo-50"><i class="fa-solid fa-image mr-1"></i> Replace Photo</button>
+                            <input type="file" id="imageReplace" accept="image/*" class="hidden" onchange="replaceImage(event)">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">Border Radius</label>
+                                <input type="range" min="0" max="50" value="0" oninput="updateRadius(this.value)" class="w-full accent-indigo-500">
+                            </div>
+                        </div>
+
+                        <!-- Shape Tools -->
+                        <div id="shapeProps" class="space-y-4 hidden">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-600 uppercase block mb-1">Shape Color</label>
+                                <input type="color" id="shapeColorPicker" onchange="updateShapeColor(this.value)" class="w-full h-10 cursor-pointer rounded border border-gray-300 p-0">
+                            </div>
+                        </div>
+
+                        <button onclick="deleteNode()" class="w-full bg-red-50 text-red-600 border border-red-200 py-3 rounded-lg text-sm font-bold transition hover:bg-red-600 hover:text-white shadow-sm mt-6"><i class="fa-solid fa-trash-can mr-2"></i> Delete Selected</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Workspace Area -->
+                <div class="flex-grow workspace-bg" id="workspaceArea" onclick="deselectNodes(event)">
+                    <div id="canvasZoomWrapper" style="transform: scale(1); transition: transform 0.2s; transform-origin: center center;">
+                        <div id="mainCanvas" class="canvas-container bg-white transition-colors duration-300">
+                            <!-- Fully Ready Nodes Injected Here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UNIVERSAL SMART GENERATOR ENGINE -->
+    <script>
+        const templateLibrary = [];
+        let currentCategory = 'ID Card';
+        let currentFilter = 'all';
+
+        // Fake Assets
+        const f_logo = 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png';
+        const f_badge = 'https://cdn-icons-png.flaticon.com/512/5610/5610944.png';
+        const f_profile = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+
+        const colorMap = {
+            black: '#1e293b', blue: '#2563eb', brown: '#78350f', gold: '#d97706',
+            green: '#16a34a', orange: '#ea580c', purple: '#9333ea', red: '#dc2626', yellow: '#eab308'
+        };
+
+        // All 26 Categories from User's List with default dimensions
+        const categoryDims = {
+            'Text logo': {w: 500, h: 500}, 'Graphic logo': {w: 500, h: 500}, 'Motion logo': {w: 500, h: 500},
+            'Business card': {w: 600, h: 350}, 'Certificate': {w: 800, h: 600}, 'Resume': {w: 600, h: 850},
+            'Greeting card': {w: 600, h: 400}, 'Invitation card': {w: 500, h: 700}, 'Postcard': {w: 600, h: 400},
+            'Label': {w: 400, h: 200}, 'Cover': {w: 600, h: 800}, 'Report': {w: 600, h: 850},
+            'Letter paper': {w: 600, h: 850}, 'Invoice': {w: 600, h: 850}, 'Email': {w: 600, h: 800},
+            'Newsletter': {w: 600, h: 850}, 'ID Card': {w: 350, h: 550}, 'Infographic': {w: 600, h: 1200},
+            'Gift card': {w: 600, h: 350}, 'Poster': {w: 600, h: 850}, 'Menu': {w: 600, h: 850},
+            'Flyer': {w: 500, h: 700}, 'Banner': {w: 800, h: 300}, 'Brochure': {w: 800, h: 600},
+            'Booklet': {w: 600, h: 850}, 'Catalog': {w: 600, h: 850}
+        };
+
+        // Super Engine: Generates 50+ templates for EVERY single category
+        function buildUniversalLibrary() {
+            let idCounter = 1;
+
+            Object.keys(categoryDims).forEach(catName => {
+                const dims = categoryDims[catName];
+                
+                Object.keys(colorMap).forEach(colorName => {
+                    const hex = colorMap[colorName];
+                    
+                    // We generate 6 layout variations per color for every category (9 colors * 6 = 54 templates per category)
+                    for(let style = 1; style <= 6; style++) {
+                        let elements = [];
+                        let bg = '#ffffff';
+
+                        // Generic Smart Layouts based on dimensions and style
+                        if(style === 1 || style === 2) {
+                            // Header heavy
+                            bg = style === 1 ? '#ffffff' : '#f8fafc';
+                            elements.push({ type: 'shape', bg: hex, x: 0, y: 0, w: dims.w, h: dims.h * 0.2 });
+                            elements.push({ type: 'text', content: catName.toUpperCase(), x: 0, y: dims.h * 0.05, w: dims.w, align: 'center', size: `${dims.w*0.08}px`, color: '#fff', weight: 'bold' });
+                            elements.push({ type: 'text', content: 'Editable Template Design', x: 0, y: dims.h * 0.3, w: dims.w, align: 'center', size: `${dims.w*0.05}px`, color: hex, weight: 'bold' });
+                            elements.push({ type: 'text', content: 'Double click here to start editing your data easily. You can add more shapes, photos, or text from the left panel.', x: dims.w*0.1, y: dims.h * 0.45, w: dims.w*0.8, align: 'center', size: '16px', color: '#64748b' });
+                            if(dims.w > 400 && dims.h > 400) elements.push({ type: 'image', src: f_logo, x: dims.w/2 - 40, y: dims.h * 0.7, w: 80, h: 80 });
+                        } 
+                        else if(style === 3 || style === 4) {
+                            // Sidebar minimal
+                            bg = style === 3 ? '#ffffff' : hex;
+                            let textColor = style === 3 ? '#1e293b' : '#ffffff';
+                            let subColor = style === 3 ? hex : '#cbd5e1';
+                            elements.push({ type: 'shape', bg: style === 3 ? hex : '#ffffff', x: 0, y: 0, w: dims.w * 0.25, h: dims.h });
+                            elements.push({ type: 'text', content: 'Premium', x: dims.w * 0.3, y: dims.h * 0.2, size: `${dims.w*0.06}px`, color: textColor, weight: 'bold' });
+                            elements.push({ type: 'text', content: catName, x: dims.w * 0.3, y: dims.h * 0.2 + (dims.w*0.08), size: `${dims.w*0.08}px`, color: subColor, weight: 'bold' });
+                            elements.push({ type: 'text', content: '123 Business Road, City, Country', x: dims.w * 0.3, y: dims.h * 0.6, size: '16px', color: textColor });
+                            elements.push({ type: 'text', content: '+1 234 567 890 | info@company.com', x: dims.w * 0.3, y: dims.h * 0.65, size: '16px', color: textColor });
+                        }
+                        else {
+                            // Bordered / Centered
+                            bg = '#ffffff';
+                            elements.push({ type: 'shape', bg: 'transparent', x: 20, y: 20, w: dims.w-40, h: dims.h-40, border: `4px solid ${hex}` });
+                            elements.push({ type: 'image', src: f_badge, x: dims.w/2 - 50, y: dims.h * 0.15, w: 100, h: 100 });
+                            elements.push({ type: 'text', content: `Modern ${catName}`, x: 0, y: dims.h * 0.4, w: dims.w, align: 'center', size: `${dims.w*0.07}px`, color: '#1e293b', weight: 'bold' });
+                            elements.push({ type: 'shape', bg: hex, x: dims.w/2 - 50, y: dims.h * 0.5, w: 100, h: 4 });
+                            elements.push({ type: 'text', content: 'This is a fully editable dummy template. Replace this text with your actual content.', x: dims.w*0.15, y: dims.h * 0.6, w: dims.w*0.7, align: 'center', size: '18px', color: '#64748b' });
+                        }
+
+                        // Specific overrides for ID Card to look like actual IDs
+                        if(catName === 'ID Card') {
+                            elements = [
+                                { type: 'shape', bg: hex, x: 0, y: 0, w: 350, h: 120 },
+                                { type: 'image', src: f_logo, x: 150, y: 20, w: 50, h: 50 },
+                                { type: 'text', content: 'COMPANY NAME', x: 0, y: 80, w: 350, align: 'center', size: '20px', color: '#fff', weight: 'bold' },
+                                { type: 'image', src: f_profile, x: 100, y: 150, w: 150, h: 150, radius: '50%', border: `4px solid ${hex}` },
+                                { type: 'text', content: 'John Doe', x: 0, y: 320, w: 350, align: 'center', size: '28px', color: '#1e293b', weight: 'bold' },
+                                { type: 'text', content: 'Position Title', x: 0, y: 360, w: 350, align: 'center', size: '16px', color: hex, weight: 'bold' },
+                                { type: 'text', content: 'ID: 123456789', x: 0, y: 410, w: 350, align: 'center', size: '14px', color: '#64748b' }
+                            ];
+                        }
+
+                        templateLibrary.push({
+                            id: idCounter++, category: catName, color: colorName, title: `${catName} ${style}`, width: dims.w, height: dims.h,
+                            bg: bg, elements: elements
+                        });
+                    }
+                });
+            });
+        }
+
+        buildUniversalLibrary();
+
+        // --- 2. NAVIGATION & RENDER LOGIC ---
+        function loadCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.sidebar .side-btn').forEach(b => b.classList.remove('active'));
+            if(document.getElementById(`cat_${category}`)) {
+                document.getElementById(`cat_${category}`).classList.add('active');
+            }
+            document.getElementById('galleryTitle').innerText = `${category} Templates`;
+            filterTemplates('all');
+        }
+
+        function filterTemplates(color) {
+            currentFilter = color;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const grid = document.getElementById('templatesGrid');
+            
+            // Create Blank Button
+            const createBtnHTML = `
+            <div onclick="openEditor(null)" class="template-card bg-indigo-50 flex flex-col items-center justify-center border-2 border-dashed border-indigo-400 hover:bg-indigo-100 min-h-[220px]">
+                <div class="bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-3 shadow-lg hover:scale-110 transition"><i class="fa-solid fa-plus"></i></div>
+                <span class="font-black text-indigo-800">Create Blank Custom</span>
+            </div>`;
+            
+            grid.innerHTML = createBtnHTML;
+
+            const filtered = color === 'all' ? templateLibrary.filter(t => t.category === currentCategory) 
+                                             : templateLibrary.filter(t => t.category === currentCategory && t.color === color);
+
+            document.getElementById('templateCount').innerText = `${filtered.length} Designs Ready`;
+
+            // Render max 100 at a time to prevent browser lag, but we have 54 per category so it's fine.
+            filtered.forEach(t => {
+                const card = document.createElement('div');
+                card.className = "template-card";
+                card.onclick = () => openEditor(t);
+
+                const preview = document.createElement('div');
+                preview.className = "template-preview";
+                
+                const mini = document.createElement('div');
+                const scale = Math.min(180 / t.width, 160 / t.height);
+                mini.style.width = t.width + "px";
+                mini.style.height = t.height + "px";
+                mini.style.transform = `scale(${scale})`;
+                mini.style.background = t.bg;
+                mini.className = "relative shadow-sm overflow-hidden bg-white";
+
+                t.elements.forEach(el => {
+                    const node = document.createElement('div');
+                    node.style.position = 'absolute';
+                    node.style.left = el.x + 'px';
+                    node.style.top = el.y + 'px';
+                    if(el.w) node.style.width = el.w + 'px';
+                    if(el.h) node.style.height = el.h + 'px';
+                    
+                    if(el.type === 'shape') {
+                        node.style.background = el.bg;
+                        if(el.border) node.style.border = el.border;
+                        if(el.radius) node.style.borderRadius = el.radius;
+                    } else if(el.type === 'image') {
+                        node.style.background = '#e2e8f0';
+                        node.style.borderRadius = el.radius || '0';
+                        node.innerHTML = `<img src="${el.src}" style="width:100%;height:100%;object-fit:cover;border-radius:${el.radius||'0'};${el.border?'border:'+el.border:''}">`;
+                    } else if(el.type === 'text') {
+                        node.innerText = el.content;
+                        node.style.fontSize = el.size;
+                        node.style.color = el.color;
+                        node.style.fontWeight = el.weight || 'normal';
+                        node.style.fontFamily = el.font || 'sans-serif';
+                        if(el.align) { node.style.width = el.w+'px'; node.style.textAlign = el.align; }
+                        if(el.borderTop) node.style.borderTop = el.borderTop;
+                    }
+                    mini.appendChild(node);
+                });
+
+                preview.appendChild(mini);
+
+                const footer = document.createElement('div');
+                footer.className = "p-4 border-t border-gray-100 flex justify-between items-center bg-white";
+                footer.innerHTML = `<span class="text-sm font-bold text-gray-800 truncate">${t.title}</span><span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase">${t.color}</span>`;
+
+                card.appendChild(preview);
+                card.appendChild(footer);
+                grid.appendChild(card);
+            });
+        }
+
+        window.onload = () => loadCategory('ID Card');
+
+        // --- 3. EDITOR WORKSPACE ENGINE ---
+        let activeNode = null;
+        let isDragging = false, isResizing = false;
+        let startX, startY, startLeft, startTop, startW, startH;
+        let canvasZoom = 1;
+        let highestZ = 10;
+
+        function openEditor(template) {
+            document.getElementById('galleryView').classList.add('hidden');
+            document.getElementById('editorView').classList.remove('hidden');
+            
+            const canvas = document.getElementById('mainCanvas');
+            canvas.innerHTML = '';
+            canvasZoom = 1;
+            highestZ = 10;
+            document.getElementById('canvasZoomWrapper').style.transform = `scale(1)`;
+            document.getElementById('zoomValue').innerText = '100%';
+
+            if(template) {
+                document.getElementById('editorHeaderTitle').innerText = `Editing: ${template.title}`;
+                canvas.style.width = template.width + "px";
+                canvas.style.height = template.height + "px";
+                canvas.style.background = template.bg;
+                document.getElementById('canvasBgColor').value = rgb2hex(template.bg);
+
+                template.elements.forEach(el => {
+                    if(el.type === 'shape') injectShapeNode(el.bg, el.x, el.y, el.w, el.h, el.radius, el.border);
+                    else if(el.type === 'image') injectImageNode(el.src, el.x, el.y, el.w, el.h, el.radius, el.border);
+                    else if(el.type === 'text') injectTextNode(el.content, el.x, el.y, el.size, el.color, el.weight, el.font, el.w, el.align, el.borderTop);
+                });
+            } else {
+                document.getElementById('editorHeaderTitle').innerText = `Editing: Custom Blank`;
+                const dims = categoryDims[currentCategory] || {w: 500, h: 500};
+                canvas.style.width = dims.w + "px";
+                canvas.style.height = dims.h + "px";
+                canvas.style.background = "#ffffff";
+                document.getElementById('canvasBgColor').value = "#ffffff";
+            }
+        }
+
+        function closeEditor() {
+            document.getElementById('editorView').classList.add('hidden');
+            document.getElementById('galleryView').classList.remove('hidden');
+            deselectNodes();
+        }
+
+        function zoomCanvas(delta) {
+            canvasZoom += delta;
+            if(canvasZoom < 0.3) canvasZoom = 0.3;
+            if(canvasZoom > 3) canvasZoom = 3;
+            document.getElementById('canvasZoomWrapper').style.transform = `scale(${canvasZoom})`;
+            document.getElementById('zoomValue').innerText = Math.round(canvasZoom * 100) + '%';
+        }
+
+        function changeCanvasBg(color) {
+            document.getElementById('mainCanvas').style.background = color;
+        }
+
+        function rgb2hex(rgb) {
+            if(rgb.startsWith('#')) return rgb;
+            if(!rgb.startsWith('rgb')) return '#ffffff';
+            let a = rgb.split("(")[1].split(")")[0].split(",");
+            return "#" + (1 << 24 | parseInt(a[0]) << 16 | parseInt(a[1]) << 8 | parseInt(a[2])).toString(16).slice(1);
+        }
+
+        // --- INJECTION ---
+        function createWrapper(x, y) {
+            const node = document.createElement('div');
+            node.className = `canvas-node draggable`;
+            node.style.left = x + "px";
+            node.style.top = y + "px";
+            highestZ++;
+            node.style.zIndex = highestZ;
+            node.addEventListener('mousedown', initDrag);
+            return node;
+        }
+
+        function injectShapeNode(bg, x, y, w, h, radius='0', border=null) {
+            const node = createWrapper(x, y);
+            node.className += " shape-node";
+            node.style.width = w + "px";
+            node.style.height = h + "px";
+            node.style.background = bg;
+            if(radius) node.style.borderRadius = radius;
+            if(border) node.style.border = border;
+
+            const handle = document.createElement('div');
+            handle.className = "resize-handle no-print";
+            handle.addEventListener('mousedown', initResize);
+            node.appendChild(handle);
+
+            document.getElementById('mainCanvas').appendChild(node);
+            return node;
+        }
+
+        function addShapeNode(type) {
+            let node;
+            if(type === 'square') node = injectShapeNode('#6366f1', 50, 50, 150, 150);
+            if(type === 'circle') node = injectShapeNode('#10b981', 50, 50, 150, 150, '50%');
+            selectNode(node);
+        }
+
+        function injectTextNode(content, x, y, size='16px', color='#000', weight='normal', font='sans-serif', w=null, align='left', borderTop=null) {
+            const node = createWrapper(x, y);
+            if(w) node.style.width = w + "px";
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = "edit-text";
+            textDiv.innerHTML = content;
+            textDiv.style.fontSize = size;
+            textDiv.style.color = color;
+            textDiv.style.fontWeight = weight;
+            textDiv.style.fontFamily = font;
+            textDiv.style.textAlign = align;
+            if(borderTop) textDiv.style.borderTop = borderTop;
+
+            textDiv.setAttribute('contenteditable', 'true');
+            textDiv.addEventListener('focus', (e) => { node.classList.remove('draggable'); });
+            textDiv.addEventListener('blur', (e) => { node.classList.add('draggable'); });
+
+            node.appendChild(textDiv);
+            document.getElementById('mainCanvas').appendChild(node);
+            return node;
+        }
+
+        function addTextNode(content='New Text', size='16px', weight='normal') {
+            const node = injectTextNode(content, 50, 50, size, '#1e293b', weight);
+            selectNode(node);
+        }
+
+        function injectImageNode(src, x, y, w, h, radius='0', border=null) {
+            const node = createWrapper(x, y);
+            node.className += " image-node";
+            node.style.width = w + "px";
+            node.style.height = h + "px";
+            if(radius) node.style.borderRadius = radius;
+            if(border) node.style.border = border;
+
+            const img = document.createElement('img');
+            img.className = "edit-image";
+            img.src = src;
+            if(radius) img.style.borderRadius = radius;
+            node.appendChild(img);
+
+            const handle = document.createElement('div');
+            handle.className = "resize-handle no-print";
+            handle.addEventListener('mousedown', initResize);
+            node.appendChild(handle);
+
+            document.getElementById('mainCanvas').appendChild(node);
+            return node;
+        }
+
+        function addImageNode(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const node = injectImageNode(ev.target.result, 50, 50, 150, 150);
+                selectNode(node);
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
+        // --- SELECTION, DRAG, RESIZE ---
+        function selectNode(node) {
+            document.querySelectorAll('.canvas-node').forEach(n => n.classList.remove('selected'));
+            activeNode = node;
+            
+            const panel = document.getElementById('propertiesPanel');
+            const txtProps = document.getElementById('textProps');
+            const imgProps = document.getElementById('imgProps');
+            const shapeProps = document.getElementById('shapeProps');
+
+            if(!node) {
+                panel.classList.add('opacity-30', 'pointer-events-none');
+                return;
+            }
+
+            node.classList.add('selected');
+            panel.classList.remove('opacity-30', 'pointer-events-none');
+            
+            if(node.querySelector('.edit-text')) {
+                txtProps.classList.remove('hidden'); imgProps.classList.add('hidden'); shapeProps.classList.add('hidden');
+                let size = parseInt(window.getComputedStyle(node.querySelector('.edit-text')).fontSize);
+                document.getElementById('fontSizeSlider').value = size || 16;
+            } else if(node.classList.contains('image-node')) {
+                txtProps.classList.add('hidden'); imgProps.classList.remove('hidden'); shapeProps.classList.add('hidden');
+            } else if(node.classList.contains('shape-node')) {
+                txtProps.classList.add('hidden'); imgProps.classList.add('hidden'); shapeProps.classList.remove('hidden');
+                document.getElementById('shapeColorPicker').value = rgb2hex(window.getComputedStyle(node).backgroundColor);
+            }
+        }
+
+        function deselectNodes(e) {
+            if(e && e.target.closest('.canvas-node')) return;
+            selectNode(null);
+        }
+
+        function initDrag(e) {
+            if(e.target.classList.contains('resize-handle') || e.target.getAttribute('contenteditable') === 'true') return;
+            e.stopPropagation();
+            selectNode(e.currentTarget);
+            
+            isDragging = true;
+            startX = e.clientX; startY = e.clientY;
+            startLeft = parseFloat(activeNode.style.left) || activeNode.offsetLeft;
+            startTop = parseFloat(activeNode.style.top) || activeNode.offsetTop;
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+        function drag(e) {
+            if(!isDragging || !activeNode) return;
+            let dx = (e.clientX - startX) / canvasZoom;
+            let dy = (e.clientY - startY) / canvasZoom;
+            activeNode.style.left = (startLeft + dx) + "px";
+            activeNode.style.top = (startTop + dy) + "px";
+        }
+        function stopDrag() { isDragging = false; document.removeEventListener('mousemove', drag); document.removeEventListener('mouseup', stopDrag); }
+
+        function initResize(e) {
+            e.stopPropagation(); e.preventDefault();
+            isResizing = true;
+            startX = e.clientX; startY = e.clientY;
+            const node = e.target.parentElement;
+            startW = node.offsetWidth; startH = node.offsetHeight;
+            selectNode(node);
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        }
+        function resize(e) {
+            if(!isResizing || !activeNode) return;
+            let dx = (e.clientX - startX) / canvasZoom;
+            let dy = (e.clientY - startY) / canvasZoom;
+            activeNode.style.width = Math.max(20, startW + dx) + "px";
+            activeNode.style.height = Math.max(20, startH + dy) + "px";
+        }
+        function stopResize() { isResizing = false; document.removeEventListener('mousemove', resize); document.removeEventListener('mouseup', stopResize); }
+
+        // --- PROPERTIES UPDATES ---
+        function updateFontSize(val) { if(activeNode && activeNode.querySelector('.edit-text')) activeNode.querySelector('.edit-text').style.fontSize = val + "px"; }
+        function updateColor(hex) { if(activeNode && activeNode.querySelector('.edit-text')) activeNode.querySelector('.edit-text').style.color = hex; }
+        function updateAlign(align) { if(activeNode && activeNode.querySelector('.edit-text')) { activeNode.style.width = "100%"; activeNode.querySelector('.edit-text').style.textAlign = align; } }
+        function toggleBold() { if(activeNode && activeNode.querySelector('.edit-text')) { let fw = activeNode.querySelector('.edit-text').style.fontWeight; activeNode.querySelector('.edit-text').style.fontWeight = (fw === '700' || fw === 'bold') ? 'normal' : 'bold'; } }
+        function toggleItalic() { if(activeNode && activeNode.querySelector('.edit-text')) { let fs = activeNode.querySelector('.edit-text').style.fontStyle; activeNode.querySelector('.edit-text').style.fontStyle = fs === 'italic' ? 'normal' : 'italic'; } }
+        
+        function updateRadius(val) {
+            if(activeNode && activeNode.classList.contains('image-node')) {
+                activeNode.style.borderRadius = val + "%";
+                activeNode.querySelector('.edit-image').style.borderRadius = val + "%";
+            }
+        }
+        function updateShapeColor(hex) { if(activeNode && activeNode.classList.contains('shape-node')) activeNode.style.backgroundColor = hex; }
+        function replaceImage(e) {
+            const file = e.target.files[0];
+            if(!file || !activeNode || !activeNode.querySelector('.edit-image')) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => { activeNode.querySelector('.edit-image').src = ev.target.result; };
+            reader.readAsDataURL(file); e.target.value = '';
+        }
+
+        function changeZIndex(step) {
+            if(!activeNode) return;
+            let currentZ = parseInt(window.getComputedStyle(activeNode).zIndex) || 10;
+            activeNode.style.zIndex = currentZ + step;
+        }
+
+        function duplicateNode() {
+            if(!activeNode) return;
+            const clone = activeNode.cloneNode(true);
+            clone.style.left = (parseFloat(activeNode.style.left) + 20) + "px";
+            clone.style.top = (parseFloat(activeNode.style.top) + 20) + "px";
+            highestZ++;
+            clone.style.zIndex = highestZ;
+            
+            clone.addEventListener('mousedown', initDrag);
+            if(clone.querySelector('.resize-handle')) {
+                clone.querySelector('.resize-handle').addEventListener('mousedown', initResize);
+            }
+            if(clone.querySelector('.edit-text')) {
+                clone.querySelector('.edit-text').addEventListener('focus', (e) => { clone.classList.remove('draggable'); });
+                clone.querySelector('.edit-text').addEventListener('blur', (e) => { clone.classList.add('draggable'); });
+            }
+
+            document.getElementById('mainCanvas').appendChild(clone);
+            selectNode(clone);
+        }
+
+        function deleteNode() { if(activeNode) { activeNode.remove(); selectNode(null); } }
+        window.addEventListener('keydown', function(e) { if((e.key === 'Delete' || e.key === 'Backspace') && activeNode) { if(document.activeElement.getAttribute('contenteditable') !== 'true') deleteNode(); } });
+
+        // --- EXPORT ENGINE ---
+        async function exportDesign(type) {
+            selectNode(null); 
+            const canvasElement = document.getElementById('mainCanvas');
+            
+            try {
+                const canvasRender = await html2canvas(canvasElement, { scale: 3, useCORS: true });
+                const imgData = canvasRender.toDataURL('image/png');
+
+                if(type === 'png') {
+                    const link = document.createElement('a');
+                    link.href = imgData; link.download = `PrintHub_Design.png`;
+                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                } else if(type === 'print') {
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                        <html><head><style>@page{margin:0;} body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:white;} img{max-width:100%;max-height:100%;object-fit:contain;}</style></head>
+                        <body><img src="${imgData}" onload="setTimeout(()=>window.print(), 500);"></body></html>
+                    `);
+                    printWindow.document.close();
+                }
+            } catch(e) { alert("Error exporting design."); }
+        }
+    </script>
+</body>
+</html>

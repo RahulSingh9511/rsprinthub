@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreePoster Studio - Create Professional Posters</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Slabo+27px&family=Raleway:wght@400;700&family=PT+Sans:wght@400;700&family=Merriweather:wght@400;700&family=Nunito:wght@400;700&family=Playfair+Display:wght@400;700&family=Rubik:wght@400;700&family=Lora:wght@400;700&family=Work+Sans:wght@400;700&family=Fira+Sans:wght@400;700&family=Quicksand:wght@400;700&family=Karla:wght@400;700&family=Inconsolata:wght@400;700&family=Josefin+Sans:wght@400;700&family=Anton&family=Bebas+Neue&family=Dancing+Script&family=Pacifico&family=Caveat&family=Satisfy&family=Abril+Fatface&family=Righteous&family=Lobster&family=Cinzel:wght@600;800&family=Great+Vibes&family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f1f5f9; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Canvas Workspace Area */
+        .workspace-wrapper {
+            background-color: #e2e8f0;
+            background-image: linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .canvas-container-outer {
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            background: white;
+            transition: transform 0.2s ease-out;
+            transform-origin: center center;
+            margin: 40px; /* Space for panning */
+        }
+
+        .canvas-container { margin: 0 auto; }
+
+        /* Sidebar Tabs */
+        .sidebar-tab { transition: all 0.2s; cursor: pointer; border-left: 3px solid transparent; }
+        .sidebar-tab:hover { background-color: #f8fafc; color: #4f46e5; }
+        .sidebar-tab.active { background-color: #e0e7ff; color: #4338ca; border-left-color: #4f46e5; font-weight: 600; }
+
+        .btn-hover { transition: all 0.2s; }
+        .btn-hover:hover { transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .btn-hover:active { transform: translateY(0); }
+
+        .prop-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 12px; outline: none; transition: border-color 0.2s; }
+        .prop-input:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.1); }
+        
+        .prop-btn { border: 1px solid #cbd5e1; background: white; border-radius: 6px; padding: 6px; font-size: 14px; cursor: pointer; transition: all 0.2s; color: #475569; display: flex; align-items: center; justify-content: center; }
+        .prop-btn:hover { background: #f1f5f9; color: #0f172a; border-color: #94a3b8; }
+        .prop-btn.active { background: #e0e7ff; color: #4338ca; border-color: #818cf8; }
+
+        .range-slider { width: 100%; accent-color: #4f46e5; }
+        
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body>
+
+    <header class="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-50">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white px-4 py-1.5 rounded-lg font-bold transition flex items-center gap-2 border border-indigo-200 text-sm">
+                <i class="fa-solid fa-arrow-left"></i> Dashboard
+            </a>
+            <div class="h-6 w-px bg-gray-300"></div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-xl flex items-center justify-center text-xl shadow-md">
+                    <i class="fa-solid fa-paintbrush"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-gray-800 tracking-tight leading-none">FreePoster Studio</h1>
+                    <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wider inline-block mt-0.5">100% Free & Unlimited</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="confirmClearCanvas()" class="text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200 px-4 py-2 rounded-lg text-sm font-semibold btn-hover flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left"></i> Start from Scratch
+            </button>
+            <button onclick="toggleHelpModal(true)" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-sm font-semibold btn-hover flex items-center gap-2">
+                <i class="fa-regular fa-circle-question"></i> Help / Guide
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-grow overflow-hidden">
+
+        <aside class="w-20 bg-white border-r border-gray-200 flex flex-col shrink-0 z-40 py-2">
+            <div class="sidebar-tab active flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-templates', this)">
+                <i class="fa-solid fa-table-cells-large text-xl"></i>
+                <span class="text-[10px]">Templates</span>
+            </div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-text', this)">
+                <i class="fa-solid fa-font text-xl"></i>
+                <span class="text-[10px]">Text</span>
+            </div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-shapes', this)">
+                <i class="fa-solid fa-shapes text-xl"></i>
+                <span class="text-[10px]">Shapes</span>
+            </div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-uploads', this)">
+                <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                <span class="text-[10px]">Uploads</span>
+            </div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-bg', this)">
+                <i class="fa-solid fa-fill-drip text-xl"></i>
+                <span class="text-[10px]">Background</span>
+            </div>
+            <div class="sidebar-tab flex flex-col items-center justify-center py-4 text-gray-500 gap-1.5" onclick="openSidebarDrawer('tab-layers', this)">
+                <i class="fa-solid fa-layer-group text-xl"></i>
+                <span class="text-[10px]">Layers</span>
+            </div>
+        </aside>
+
+        <aside id="sidebar-drawer" class="w-72 bg-gray-50 border-r border-gray-200 flex flex-col shrink-0 z-30 transition-all duration-300 overflow-y-auto">
+            
+            <div id="tab-templates" class="drawer-panel p-5 hidden block">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">Ready Templates</h2>
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-500 mb-1 block">Category</label>
+                    <select id="templateCategorySelect" class="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:border-indigo-500" onchange="renderTemplatesList(this.value)">
+                        <option value="All">All Categories</option>
+                        <option value="Business & Sales">Business & Sales</option>
+                        <option value="Events & Parties">Events & Parties</option>
+                        <option value="Education & Webinars">Education & Webinars</option>
+                        <option value="Sports & Gym">Sports & Gym</option>
+                        <option value="Food & Restaurant">Food & Restaurant</option>
+                        <option value="Quotes & Motivation">Quotes & Motivation</option>
+                        <option value="Announcements">Announcements</option>
+                        <option value="Festive & Holidays">Festive & Holidays</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3" id="templateListContainer">
+                    </div>
+            </div>
+
+            <div id="tab-text" class="drawer-panel p-5 hidden">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">Add Text</h2>
+                
+                <div class="space-y-3 mb-6">
+                    <button onclick="addText('Heading', 48, 'bold')" class="w-full bg-white border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg py-3 text-2xl font-bold text-gray-800 transition">Add Big Heading</button>
+                    <button onclick="addText('Subheading', 28, 'normal')" class="w-full bg-white border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg py-3 text-lg font-semibold text-gray-700 transition">Add Subheading</button>
+                    <button onclick="addText('Add a little bit of body text', 16, 'normal')" class="w-full bg-white border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 rounded-lg py-3 text-sm text-gray-600 transition">Add Body Text</button>
+                </div>
+                
+                <h3 class="text-xs font-semibold text-gray-500 mb-2">Or select a stylish font combo:</h3>
+                <div class="grid grid-cols-1 gap-2 h-64 overflow-y-auto pr-2 custom-scroll" id="fontCombosList">
+                    </div>
+            </div>
+
+            <div id="tab-shapes" class="drawer-panel p-5 hidden">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">Shapes & Elements</h2>
+                
+                <h3 class="text-xs font-semibold text-gray-500 mb-2">Basic Shapes</h3>
+                <div class="grid grid-cols-3 gap-2 mb-6">
+                    <button onclick="addShape('rect')" class="bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 aspect-square rounded-lg flex items-center justify-center transition"><div class="w-8 h-8 bg-gray-700"></div></button>
+                    <button onclick="addShape('circle')" class="bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 aspect-square rounded-lg flex items-center justify-center transition"><div class="w-8 h-8 bg-gray-700 rounded-full"></div></button>
+                    <button onclick="addShape('triangle')" class="bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 aspect-square rounded-lg flex items-center justify-center transition"><div class="w-0 h-0 border-l-[16px] border-r-[16px] border-b-[28px] border-l-transparent border-r-transparent border-b-gray-700"></div></button>
+                    <button onclick="addShape('line')" class="bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 aspect-square rounded-lg flex items-center justify-center transition col-span-3"><div class="w-full h-1 bg-gray-700 mx-4"></div></button>
+                </div>
+
+                <h3 class="text-xs font-semibold text-gray-500 mb-2">Icons / Stickers</h3>
+                <div class="grid grid-cols-3 gap-2" id="iconStickersList">
+                    </div>
+            </div>
+
+            <div id="tab-uploads" class="drawer-panel p-5 hidden">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">My Uploads</h2>
+                
+                <div class="border-2 border-dashed border-indigo-300 bg-indigo-50 rounded-xl p-6 text-center mb-6 cursor-pointer hover:bg-indigo-100 transition" onclick="document.getElementById('fileUploadInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-indigo-500 mb-2"></i>
+                    <p class="text-sm font-semibold text-indigo-700">Upload Media</p>
+                    <p class="text-xs text-indigo-500 mt-1">PNG, JPG</p>
+                </div>
+                <input type="file" id="fileUploadInput" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                
+                <h3 class="text-xs font-semibold text-gray-500 mb-2">Uploaded Images</h3>
+                <div class="grid grid-cols-2 gap-2" id="uploadedImagesGrid">
+                    <p class="col-span-2 text-xs text-gray-400 text-center py-4" id="noUploadsMsg">No images uploaded yet.</p>
+                </div>
+            </div>
+
+            <div id="tab-bg" class="drawer-panel p-5 hidden">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">Canvas Background</h2>
+                
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-500 mb-2 block">Solid Color</label>
+                    <div class="flex items-center gap-2">
+                        <input type="color" id="bgColorPicker" onchange="setCanvasBackground(this.value)" class="w-10 h-10 p-0 border-0 rounded cursor-pointer">
+                        <span class="text-xs font-mono text-gray-500" id="bgColorHexLabel">#ffffff</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-500 mb-2 block">Quick Palettes</label>
+                    <div class="grid grid-cols-5 gap-2" id="quickColorPalette">
+                        </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 mb-2 block">Pattern Overlays</label>
+                    <div class="grid grid-cols-2 gap-2" id="patternBgGrid">
+                        </div>
+                </div>
+            </div>
+
+            <div id="tab-layers" class="drawer-panel p-5 hidden">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide mb-4 border-b border-gray-200 pb-2">Layers Panel</h2>
+                <p class="text-xs text-gray-500 mb-3">Reorder elements on your canvas.</p>
+                <div class="flex flex-col gap-2 h-[calc(100vh-250px)] overflow-y-auto pr-1 custom-scroll" id="layersListContainer">
+                    </div>
+            </div>
+
+        </aside>
+
+        <div class="flex flex-col flex-grow relative overflow-hidden">
+            
+            <div class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0 shadow-sm z-20">
+                
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1">Resize:</span>
+                    <select id="canvasSizeSelector" class="prop-input w-auto font-semibold cursor-pointer border-gray-300" onchange="changeCanvasSize(this.value)">
+                        <option value="a4p">A4 Portrait (Print)</option>
+                        <option value="a4l">A4 Landscape</option>
+                        <option value="square">Square (1:1 Social)</option>
+                        <option value="story">Story (9:16 Mobile)</option>
+                        <option value="custom">Custom Size...</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1.5 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                    <button onclick="canvasUndo()" class="prop-btn text-gray-600 hover:text-indigo-600 w-8 h-8 rounded" title="Undo"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="canvasRedo()" class="prop-btn text-gray-600 hover:text-indigo-600 w-8 h-8 rounded" title="Redo"><i class="fa-solid fa-rotate-right"></i></button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <button onclick="deleteSelectedObject()" class="prop-btn text-gray-600 hover:text-red-600 w-8 h-8 rounded" title="Delete Selected"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="w-px h-5 bg-gray-300 mx-1"></div>
+                    <label class="flex items-center gap-1.5 text-xs font-medium text-gray-600 cursor-pointer px-2 border-r border-gray-300 pr-3">
+                        <input type="checkbox" id="snapGridToggle" onchange="toggleSnapToGrid()" class="w-3.5 h-3.5 accent-indigo-600"> Snap to Grid
+                    </label>
+                    <div class="flex items-center gap-1 ml-1">
+                        <button onclick="setZoomCanvas(-0.1)" class="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-200 rounded"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                        <span id="zoomLabelText" class="text-xs font-bold text-gray-700 w-10 text-center">50%</span>
+                        <button onclick="setZoomCanvas(0.1)" class="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-200 rounded"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="exportCanvas('png')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold btn-hover shadow-sm transition"><i class="fa-solid fa-image mr-1"></i> PNG</button>
+                    <button onclick="exportCanvas('jpg')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold btn-hover shadow-sm transition"><i class="fa-solid fa-image mr-1"></i> JPG</button>
+                    <button onclick="exportCanvas('pdf')" class="bg-gray-900 hover:bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold btn-hover shadow-sm transition"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</button>
+                </div>
+            </div>
+
+            <div class="workspace-wrapper" id="workspaceOuterWrapper">
+                <div class="canvas-container-outer" id="canvasContainerOuter">
+                    <canvas id="posterCanvas"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <aside class="w-72 bg-white border-l border-gray-200 flex flex-col shrink-0 z-30 overflow-y-auto">
+            <div class="p-5 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-wide"><i class="fa-solid fa-sliders text-indigo-500 mr-1.5"></i> Properties</h2>
+                <p class="text-[10px] text-gray-500 mt-1 font-medium" id="selectionTypeLabel">Select an element to edit</p>
+            </div>
+
+            <div class="p-5" id="propertiesPanelContainer">
+                
+                <div id="noSelectionMsg" class="flex flex-col items-center justify-center h-48 text-center opacity-50">
+                    <i class="fa-solid fa-wand-magic-sparkles text-4xl mb-3 text-gray-400"></i>
+                    <p class="text-sm font-medium text-gray-600">Click on any text, shape, or image on the canvas to see its editing options here.</p>
+                </div>
+
+                <div id="textPropertiesGroup" class="hidden space-y-4">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 block">Font Family</label>
+                        <select id="propFontFamily" class="prop-input" onchange="updateObjectProperty('fontFamily', this.value)">
+                            </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 mb-1 block">Font Size</label>
+                            <div class="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
+                                <button onclick="adjustObjectValue('fontSize', -1)" class="w-8 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 border-r border-gray-300">-</button>
+                                <input type="number" id="propFontSize" class="w-full text-center text-xs py-1 outline-none" onchange="updateObjectProperty('fontSize', parseInt(this.value))">
+                                <button onclick="adjustObjectValue('fontSize', 1)" class="w-8 py-1 bg-gray-50 hover:bg-gray-200 text-gray-600 border-l border-gray-300">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 mb-1 block">Color</label>
+                            <input type="color" id="propTextColor" class="w-full h-[26px] p-0 border-0 rounded cursor-pointer" onchange="updateObjectProperty('fill', this.value)">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 block">Text Style & Alignment</label>
+                        <div class="flex gap-1 bg-gray-100 p-1 rounded-lg mb-2">
+                            <button id="btnFormatBold" onclick="toggleObjectProperty('fontWeight', 'bold', 'normal')" class="prop-btn flex-1 font-bold">B</button>
+                            <button id="btnFormatItalic" onclick="toggleObjectProperty('fontStyle', 'italic', 'normal')" class="prop-btn flex-1 italic font-serif">I</button>
+                            <button id="btnFormatUnderline" onclick="toggleObjectProperty('underline', true, false)" class="prop-btn flex-1 underline">U</button>
+                        </div>
+                        <div class="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                            <button id="btnAlignLeft" onclick="updateObjectProperty('textAlign', 'left')" class="prop-btn flex-1"><i class="fa-solid fa-align-left"></i></button>
+                            <button id="btnAlignCenter" onclick="updateObjectProperty('textAlign', 'center')" class="prop-btn flex-1"><i class="fa-solid fa-align-center"></i></button>
+                            <button id="btnAlignRight" onclick="updateObjectProperty('textAlign', 'right')" class="prop-btn flex-1"><i class="fa-solid fa-align-right"></i></button>
+                            <button id="btnAlignJustify" onclick="updateObjectProperty('textAlign', 'justify')" class="prop-btn flex-1"><i class="fa-solid fa-align-justify"></i></button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 flex justify-between"><span>Line Height</span> <span id="lblLineHeight">1.2</span></label>
+                        <input type="range" id="propLineHeight" min="0.5" max="3" step="0.1" class="range-slider" oninput="document.getElementById('lblLineHeight').innerText=this.value; updateObjectProperty('lineHeight', parseFloat(this.value))">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 flex justify-between"><span>Letter Spacing</span> <span id="lblCharSpacing">0</span></label>
+                        <input type="range" id="propCharSpacing" min="-100" max="1000" step="10" class="range-slider" oninput="document.getElementById('lblCharSpacing').innerText=this.value; updateObjectProperty('charSpacing', parseInt(this.value))">
+                    </div>
+                </div>
+
+                <div id="shapePropertiesGroup" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 mb-1 block">Fill Color</label>
+                            <input type="color" id="propShapeFill" class="w-full h-8 p-0 border-0 rounded cursor-pointer" onchange="updateObjectProperty('fill', this.value)">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 mb-1 block">Stroke Color</label>
+                            <input type="color" id="propShapeStroke" class="w-full h-8 p-0 border-0 rounded cursor-pointer" onchange="updateObjectProperty('stroke', this.value)">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 flex justify-between"><span>Stroke Width</span> <span id="lblStrokeWidth">0</span></label>
+                        <input type="range" id="propStrokeWidth" min="0" max="50" step="1" class="range-slider" oninput="document.getElementById('lblStrokeWidth').innerText=this.value; updateObjectProperty('strokeWidth', parseInt(this.value))">
+                    </div>
+                    <div id="propCornerRadiusWrapper">
+                        <label class="text-xs font-semibold text-gray-500 mb-1 flex justify-between"><span>Corner Radius</span> <span id="lblCornerRadius">0</span></label>
+                        <input type="range" id="propCornerRadius" min="0" max="300" step="1" class="range-slider" oninput="document.getElementById('lblCornerRadius').innerText=this.value; updateObjectProperty('rx', parseInt(this.value)); updateObjectProperty('ry', parseInt(this.value));">
+                    </div>
+                </div>
+
+                <div id="imagePropertiesGroup" class="hidden space-y-4">
+                    <div class="flex gap-2">
+                        <button onclick="flipObject('flipX')" class="flex-1 bg-white border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-arrows-left-right mr-1"></i> Flip X</button>
+                        <button onclick="flipObject('flipY')" class="flex-1 bg-white border border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-arrows-up-down mr-1"></i> Flip Y</button>
+                    </div>
+                </div>
+
+                <div id="commonPropertiesGroup" class="hidden mt-6 pt-6 border-t border-gray-200 space-y-4">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-1 flex justify-between"><span>Opacity</span> <span id="lblOpacity">100%</span></label>
+                        <input type="range" id="propOpacity" min="0" max="1" step="0.05" class="range-slider" oninput="document.getElementById('lblOpacity').innerText=Math.round(this.value*100)+'%'; updateObjectProperty('opacity', parseFloat(this.value))">
+                    </div>
+                    
+                    <div>
+                        <label class="text-xs font-semibold text-gray-500 mb-2 block">Arrangement</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="arrangeObject('front')" class="bg-gray-100 hover:bg-gray-200 py-2 rounded text-xs font-medium text-gray-700 transition"><i class="fa-solid fa-arrow-up-from-bracket mr-1"></i> Bring to Front</button>
+                            <button onclick="arrangeObject('back')" class="bg-gray-100 hover:bg-gray-200 py-2 rounded text-xs font-medium text-gray-700 transition"><i class="fa-solid fa-arrow-down-to-bracket mr-1"></i> Send to Back</button>
+                            <button onclick="arrangeObject('centerH')" class="bg-gray-100 hover:bg-gray-200 py-2 rounded text-xs font-medium text-gray-700 transition"><i class="fa-solid fa-arrows-left-right-to-line mr-1"></i> Center H</button>
+                            <button onclick="arrangeObject('centerV')" class="bg-gray-100 hover:bg-gray-200 py-2 rounded text-xs font-medium text-gray-700 transition"><i class="fa-solid fa-arrows-up-down-to-line mr-1"></i> Center V</button>
+                        </div>
+                    </div>
+                    
+                    <button onclick="cloneSelectedObject()" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 py-2.5 rounded-lg text-sm font-semibold transition mt-2 flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-copy"></i> Duplicate Layer
+                    </button>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+
+    <div id="customSizeModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-[100]">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-96 transform scale-95 transition-transform duration-200" id="customSizeModalBox">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-bold text-lg text-gray-800">Custom Canvas Size</h3>
+                <button onclick="toggleCustomSizeModal(false)" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Width (px)</label>
+                    <input type="number" id="inpCustomWidth" value="1080" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-1 block">Height (px)</label>
+                    <input type="number" id="inpCustomHeight" value="1080" class="w-full border border-gray-300 rounded p-2 text-sm outline-none focus:border-indigo-500">
+                </div>
+            </div>
+            <button onclick="applyCustomSize()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg transition">Apply Size</button>
+        </div>
+    </div>
+
+    <div id="helpModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-[100]">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-[500px] max-w-full m-4 transform scale-95 transition-transform duration-200" id="helpModalBox">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black text-2xl text-gray-800"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-2"></i> How to use</h3>
+                <button onclick="toggleHelpModal(false)" class="text-gray-400 hover:text-red-500 bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-4 text-sm text-gray-600">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-layer-group"></i></div>
+                    <p><b>Templates & Tools:</b> Use the left sidebar to add text, shapes, or pick ready-made poster templates.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-up-down-left-right"></i></div>
+                    <p><b>Drag & Resize:</b> Click any item on the central canvas to drag it. Use the corner dots to scale or rotate it.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-amber-100 text-amber-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-pen-to-square"></i></div>
+                    <p><b>Edit Text:</b> <i>Double-click</i> on any text box to rewrite its content natively on the canvas.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-purple-100 text-purple-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-sliders"></i></div>
+                    <p><b>Properties:</b> Select an item to change its color, font, or opacity using the right side panel.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded bg-pink-100 text-pink-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-download"></i></div>
+                    <p><b>Export:</b> When done, click the PNG, JPG, or PDF buttons at the top right to download instantly.</p>
+                </div>
+            </div>
+            <button onclick="toggleHelpModal(false)" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-xl transition mt-8">Got it, Let's Design!</button>
+        </div>
+    </div>
+
+
+    <script>
+        // ==========================================
+        // 1. SYSTEM INITIALIZATION & STATE
+        // ==========================================
+        
+        let canvas;
+        let canvasHistory = [];
+        let historyIndex = -1;
+        let isHistoryUpdating = false;
+        let snapToGrid = false;
+        const gridSize = 20;
+
+        // Poster Sizes Configuration
+        const canvasSizes = {
+            'a4p': { w: 794, h: 1123 }, // A4 Portrait at 96dpi
+            'a4l': { w: 1123, h: 794 }, // A4 Landscape
+            'square': { w: 1080, h: 1080 }, // Instagram
+            'story': { w: 1080, h: 1920 } // Story/Reel
+        };
+
+        // Standard Fonts list
+        const fontFamilies = [
+            'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Source Sans Pro', 'Slabo 27px', 
+            'Raleway', 'PT Sans', 'Merriweather', 'Nunito', 'Playfair Display', 'Rubik', 'Lora', 'Work Sans', 
+            'Fira Sans', 'Quicksand', 'Karla', 'Inconsolata', 'Josefin Sans', 'Anton', 'Bebas Neue', 
+            'Dancing Script', 'Pacifico', 'Caveat', 'Satisfy', 'Abril Fatface', 'Righteous', 'Lobster', 
+            'Cinzel', 'Great Vibes'
+        ];
+
+        // Default Data & Templates Structure
+        const posterTemplates = [
+            { cat: 'Business & Sales', name: 'Corporate Seminar', w: 794, h: 1123, bg: '#0f172a', items: [
+                { type: 'rect', w: 794, h: 200, fill: '#3b82f6', top: 0, left: 0 },
+                { type: 'text', content: 'GLOBAL TECH', size: 24, fill: '#93c5fd', top: 40, left: 60, font: 'Montserrat', weight: 'bold' },
+                { type: 'text', content: 'LEADERSHIP\nSEMINAR 2026', size: 64, fill: '#ffffff', top: 70, left: 60, font: 'Montserrat', weight: '900' },
+                { type: 'text', content: 'Join the industry leaders to discuss the future of technology and AI.', size: 20, fill: '#94a3b8', top: 300, left: 60, font: 'Roboto', width: 600 },
+                { type: 'rect', w: 300, h: 60, fill: '#3b82f6', top: 450, left: 60, rx: 8 },
+                { type: 'text', content: 'REGISTER NOW', size: 22, fill: '#ffffff', top: 466, left: 110, font: 'Poppins', weight: 'bold' },
+                { type: 'circle', r: 150, fill: 'rgba(59, 130, 246, 0.1)', top: 600, left: 400 },
+                { type: 'text', content: 'Date: 15 Oct 2026 | Location: Grand Hotel, NYC', size: 18, fill: '#cbd5e1', top: 1000, left: 60, font: 'Roboto' }
+            ]},
+            { cat: 'Events & Parties', name: 'DJ Night Party', w: 1080, h: 1080, bg: '#000000', items: [
+                { type: 'rect', w: 1080, h: 1080, fill: 'transparent', stroke: '#ec4899', strokeWidth: 20, top: 0, left: 0 },
+                { type: 'text', content: 'FRIDAY NIGHT', size: 40, fill: '#fbcfe8', top: 150, left: 540, font: 'Bebas Neue', align: 'center', originX: 'center' },
+                { type: 'text', content: 'NEON PARTY', size: 140, fill: '#ec4899', top: 200, left: 540, font: 'Anton', align: 'center', originX: 'center' },
+                { type: 'text', content: 'MUSIC . DANCE . DRINKS', size: 30, fill: '#ffffff', top: 400, left: 540, font: 'Montserrat', align: 'center', originX: 'center', tracking: 200 },
+                { type: 'text', content: 'FEATURING DJ ALEX', size: 50, fill: '#fde047', top: 600, left: 540, font: 'Dancing Script', align: 'center', originX: 'center' },
+                { type: 'text', content: 'ENTRY: $20 | LADIES FREE BEFORE 10 PM', size: 24, fill: '#94a3b8', top: 850, left: 540, font: 'Roboto', align: 'center', originX: 'center' },
+            ]},
+            { cat: 'Quotes & Motivation', name: 'Morning Inspiration', w: 1080, h: 1920, bg: '#fef3c7', items: [
+                { type: 'circle', r: 400, fill: '#fde047', top: -200, left: 600 },
+                { type: 'text', content: '“', size: 300, fill: '#fbbf24', top: 200, left: 100, font: 'Lora' },
+                { type: 'text', content: 'Believe you can\nand you\'re halfway\nthere.', size: 90, fill: '#78350f', top: 500, left: 120, font: 'Playfair Display', weight: 'bold', lineHeight: 1.2 },
+                { type: 'text', content: '- Theodore Roosevelt', size: 35, fill: '#b45309', top: 900, left: 120, font: 'Poppins', style: 'italic' },
+                { type: 'rect', w: 100, h: 10, fill: '#f59e0b', top: 450, left: 120 }
+            ]},
+            { cat: 'Food & Restaurant', name: 'Burger Promo', w: 1080, h: 1080, bg: '#ef4444', items: [
+                { type: 'rect', w: 1080, h: 400, fill: '#fca5a5', top: 0, left: 0 },
+                { type: 'text', content: 'DELICIOUS', size: 60, fill: '#ffffff', top: 60, left: 100, font: 'Pacifico' },
+                { type: 'text', content: 'HOT BURGER', size: 120, fill: '#7f1d1d', top: 120, left: 100, font: 'Anton', weight: 'bold' },
+                { type: 'circle', r: 120, fill: '#fde047', top: 600, left: 700 },
+                { type: 'text', content: '50%\nOFF', size: 60, fill: '#b45309', top: 660, left: 820, font: 'Poppins', weight: '900', align: 'center', originX: 'center' },
+                { type: 'text', content: 'Order Now: www.burgerplace.com', size: 30, fill: '#ffffff', top: 950, left: 540, font: 'Roboto', align: 'center', originX: 'center' }
+            ]},
+            { cat: 'Announcements', name: 'Hiring Notice', w: 794, h: 1123, bg: '#ffffff', items: [
+                { type: 'rect', w: 754, h: 1083, fill: 'transparent', stroke: '#000000', strokeWidth: 5, top: 20, left: 20 },
+                { type: 'rect', w: 794, h: 250, fill: '#f8fafc', top: 0, left: 0 },
+                { type: 'text', content: 'WE ARE', size: 40, fill: '#64748b', top: 80, left: 397, font: 'Montserrat', align: 'center', originX: 'center', tracking: 400 },
+                { type: 'text', content: 'HIRING', size: 100, fill: '#0f172a', top: 120, left: 397, font: 'Montserrat', weight: '900', align: 'center', originX: 'center' },
+                { type: 'text', content: 'JOIN OUR CREATIVE TEAM', size: 25, fill: '#ef4444', top: 320, left: 397, font: 'Poppins', weight: 'bold', align: 'center', originX: 'center' },
+                { type: 'text', content: 'Positions Available:\n- Graphic Designer\n- UI/UX Developer\n- Marketing Manager', size: 22, fill: '#334155', top: 420, left: 100, font: 'Roboto', lineHeight: 2 },
+                { type: 'text', content: 'Send your resume to:\ncareers@company.com', size: 24, fill: '#0f172a', top: 850, left: 397, font: 'Poppins', weight: '600', align: 'center', originX: 'center' }
+            ]}
+        ];
+
+        // --- Initialization ---
+        window.onload = function() {
+            canvas = new fabric.Canvas('posterCanvas', {
+                preserveObjectStacking: true,
+                selectionBorderColor: '#6366f1',
+                selectionColor: 'rgba(99, 102, 241, 0.1)',
+                selectionLineWidth: 2
+            });
+
+            fabric.Object.prototype.set({
+                transparentCorners: false,
+                cornerColor: '#6366f1',
+                cornerStrokeColor: '#ffffff',
+                borderColor: '#6366f1',
+                cornerSize: 12,
+                padding: 10,
+                cornerStyle: 'circle',
+                borderDashArray: [4, 4]
+            });
+
+            canvas.on('selection:created', handleSelection);
+            canvas.on('selection:updated', handleSelection);
+            canvas.on('selection:cleared', handleSelectionCleared);
+            
+            canvas.on('object:modified', saveHistory);
+            canvas.on('object:added', saveHistory);
+            canvas.on('object:removed', saveHistory);
+            canvas.on('object:moving', handleSnapping);
+
+            populateFontSelect();
+            populateQuickColors();
+            populateIconsList();
+            renderTemplatesList('All');
+
+            changeCanvasSize('a4p'); // Default A4 Portrait
+            setupWorkspaceZoomControls();
+            
+            setTimeout(saveHistory, 100);
+        };
+
+        // ==========================================
+        // 2. CANVAS CORE FUNCTIONS (Size, Zoom, History)
+        // ==========================================
+        
+        function changeCanvasSize(val) {
+            if(val === 'custom') {
+                toggleCustomSizeModal(true);
+                return;
+            }
+            applySize(canvasSizes[val].w, canvasSizes[val].h);
+        }
+
+        function toggleCustomSizeModal(show) {
+            const modal = document.getElementById('customSizeModal');
+            const box = document.getElementById('customSizeModalBox');
+            if(show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => box.classList.replace('scale-95', 'scale-100'), 10);
+            } else {
+                box.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.getElementById('canvasSizeSelector').value = 'a4p';
+                }, 200);
+            }
+        }
+
+        function applyCustomSize() {
+            const w = parseInt(document.getElementById('inpCustomWidth').value);
+            const h = parseInt(document.getElementById('inpCustomHeight').value);
+            if(w > 100 && h > 100) {
+                applySize(w, h);
+                toggleCustomSizeModal(false);
+            } else {
+                alert("Size must be at least 100x100 pixels.");
+            }
+        }
+
+        function applySize(w, h) {
+            canvas.setWidth(w);
+            canvas.setHeight(h);
+            
+            const wrapper = document.getElementById('workspaceOuterWrapper');
+            const availableW = wrapper.clientWidth - 80; 
+            const availableH = wrapper.clientHeight - 80;
+            
+            let targetZoom = 1;
+            if (w > availableW || h > availableH) {
+                targetZoom = Math.min(availableW / w, availableH / h);
+            } else if (w < availableW * 0.7 && h < availableH * 0.7) {
+                targetZoom = Math.min(availableW / w, availableH / h) * 0.8; 
+            }
+            
+            targetZoom = Math.round(targetZoom * 20) / 20;
+            if(targetZoom < 0.1) targetZoom = 0.1;
+            
+            currentZoom = targetZoom;
+            applyCanvasZoom();
+            updateLayersPanel();
+        }
+
+        // --- Zooming ---
+        let currentZoom = 1;
+        function setZoomCanvas(delta) {
+            currentZoom += delta;
+            if(currentZoom < 0.1) currentZoom = 0.1;
+            if(currentZoom > 4) currentZoom = 4;
+            applyCanvasZoom();
+        }
+
+        function applyCanvasZoom() {
+            document.getElementById('zoomLabelText').innerText = Math.round(currentZoom * 100) + '%';
+            document.getElementById('canvasContainerOuter').style.transform = `scale(${currentZoom})`;
+            const outer = document.getElementById('canvasContainerOuter');
+            outer.style.margin = "40px auto"; 
+        }
+
+        function setupWorkspaceZoomControls() {
+            document.getElementById('workspaceOuterWrapper').addEventListener('wheel', function(e) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    setZoomCanvas(e.deltaY < 0 ? 0.05 : -0.05);
+                }
+            }, { passive: false });
+        }
+
+        // --- History ---
+        function saveHistory() {
+            if(isHistoryUpdating) return;
+            const json = JSON.stringify(canvas.toJSON(['id', 'selectable']));
+            
+            if (historyIndex < canvasHistory.length - 1) {
+                canvasHistory = canvasHistory.slice(0, historyIndex + 1);
+            }
+            
+            if (historyIndex >= 0 && canvasHistory[historyIndex] === json) return;
+
+            canvasHistory.push(json);
+            historyIndex++;
+            
+            if(canvasHistory.length > 50) {
+                canvasHistory.shift();
+                historyIndex--;
+            }
+            updateLayersPanel();
+        }
+
+        function canvasUndo() {
+            if(historyIndex > 0) {
+                isHistoryUpdating = true;
+                historyIndex--;
+                canvas.loadFromJSON(canvasHistory[historyIndex], function() {
+                    canvas.renderAll();
+                    isHistoryUpdating = false;
+                    handleSelectionCleared();
+                    updateLayersPanel();
+                });
+            }
+        }
+
+        function canvasRedo() {
+            if(historyIndex < canvasHistory.length - 1) {
+                isHistoryUpdating = true;
+                historyIndex++;
+                canvas.loadFromJSON(canvasHistory[historyIndex], function() {
+                    canvas.renderAll();
+                    isHistoryUpdating = false;
+                    handleSelectionCleared();
+                    updateLayersPanel();
+                });
+            }
+        }
+
+        function confirmClearCanvas() {
+            if(confirm("Are you sure you want to clear the entire canvas?")) {
+                canvas.clear();
+                canvas.backgroundColor = '#ffffff';
+                saveHistory();
+            }
+        }
+
+        function toggleSnapToGrid() {
+            snapToGrid = document.getElementById('snapGridToggle').checked;
+        }
+
+        function handleSnapping(options) {
+            if(!snapToGrid) return;
+            const obj = options.target;
+            obj.set({
+                left: Math.round(obj.left / gridSize) * gridSize,
+                top: Math.round(obj.top / gridSize) * gridSize
+            });
+        }
+
+
+        // ==========================================
+        // 3. UI GENERATION & EVENT HANDLERS
+        // ==========================================
+        
+        function openSidebarDrawer(tabId, el) {
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+
+            document.querySelectorAll('.drawer-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            if(tabId === 'tab-layers') updateLayersPanel();
+        }
+
+        function populateFontSelect() {
+            const select = document.getElementById('propFontFamily');
+            select.innerHTML = '';
+            fontFamilies.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.text = f;
+                opt.style.fontFamily = f;
+                select.appendChild(opt);
+            });
+            
+            const list = document.getElementById('fontCombosList');
+            const combos = [
+                { f1: 'Cinzel', f2: 'Montserrat', t1: 'SALE', t2: '50% OFF EVERYTHING' },
+                { f1: 'Great Vibes', f2: 'Lora', t1: 'Wedding', t2: 'INVITATION' },
+                { f1: 'Anton', f2: 'Roboto', t1: 'BREAKING', t2: 'NEWS HEADLINE' },
+                { f1: 'Pacifico', f2: 'Quicksand', t1: 'Delicious', t2: 'SWEET TREATS' },
+                { f1: 'Bebas Neue', f2: 'Open Sans', t1: 'FITNESS', t2: 'JOIN THE GYM' }
+            ];
+
+            combos.forEach(c => {
+                const box = document.createElement('div');
+                box.className = "border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition mb-2 bg-white";
+                box.onclick = () => {
+                    addText(c.t1, 64, 'normal', c.f1);
+                    setTimeout(() => { addText(c.t2, 24, 'normal', c.f2); }, 50);
+                };
+                box.innerHTML = `
+                    <div style="font-family: '${c.f1}'; font-size: 20px; line-height:1; color:#1e293b">${c.t1}</div>
+                    <div style="font-family: '${c.f2}'; font-size: 10px; color:#64748b; margin-top:2px;">${c.t2}</div>
+                `;
+                list.appendChild(box);
+            });
+        }
+
+        function populateQuickColors() {
+            const palette = ['#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#64748b', '#334155'];
+            const target = document.getElementById('quickColorPalette');
+            palette.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = "w-full aspect-square rounded-md border border-gray-200 shadow-sm cursor-pointer hover:scale-110 transition";
+                btn.style.backgroundColor = c;
+                btn.onclick = () => setCanvasBackground(c);
+                target.appendChild(btn);
+            });
+
+            const patTarget = document.getElementById('patternBgGrid');
+            const patterns = [
+                { name: 'Grid', val: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M20 0L0 20M0 0l20 20\' stroke=\'%23e2e8f0\' stroke-width=\'1\' fill=\'none\'/%3E%3C/svg%3E")' },
+                { name: 'Dots', val: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'2\' cy=\'2\' r=\'2\' fill=\'%23cbd5e1\'/%3E%3C/svg%3E")' }
+            ];
+            patterns.forEach(p => {
+                const b = document.createElement('button');
+                b.className = "bg-white border border-gray-300 py-3 rounded text-xs font-semibold text-gray-600 hover:bg-gray-50";
+                b.innerText = p.name;
+                b.onclick = () => setCanvasBackgroundPattern(p.val);
+                patTarget.appendChild(b);
+            });
+        }
+
+        function populateIconsList() {
+            const list = document.getElementById('iconStickersList');
+            const icons = [
+                { c: 'fa-solid fa-star', t: '\uf005' }, { c: 'fa-solid fa-heart', t: '\uf004' }, { c: 'fa-solid fa-check', t: '\uf00c' },
+                { c: 'fa-solid fa-location-dot', t: '\uf3c5' }, { c: 'fa-solid fa-phone', t: '\uf095' }, { c: 'fa-solid fa-envelope', t: '\uf0e0' },
+                { c: 'fa-solid fa-globe', t: '\uf0ac' }, { c: 'fa-solid fa-cart-shopping', t: '\uf07a' }, { c: 'fa-solid fa-tag', t: '\uf02b' },
+                { c: 'fa-brands fa-facebook', t: '\uf09a' }, { c: 'fa-brands fa-instagram', t: '\uf16d' }, { c: 'fa-brands fa-twitter', t: '\uf099' }
+            ];
+
+            icons.forEach(icon => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 aspect-square rounded-lg flex items-center justify-center text-xl text-gray-700 transition";
+                btn.innerHTML = `<i class="${icon.c}"></i>`;
+                btn.onclick = () => {
+                    const text = new fabric.Text(icon.t, {
+                        fontFamily: icon.c.includes('brands') ? '"Font Awesome 6 Brands"' : '"Font Awesome 6 Free"',
+                        fontWeight: icon.c.includes('brands') ? 400 : 900,
+                        fontSize: 60,
+                        fill: '#0f172a',
+                        left: canvas.width / 2,
+                        top: canvas.height / 2,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                    canvas.add(text);
+                    canvas.setActiveObject(text);
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        function toggleHelpModal(show) {
+            const modal = document.getElementById('helpModal');
+            const box = document.getElementById('helpModalBox');
+            if(show) {
+                modal.classList.remove('hidden'); modal.classList.add('flex');
+                setTimeout(() => box.classList.replace('scale-95', 'scale-100'), 10);
+            } else {
+                box.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 200);
+            }
+        }
+
+
+        // ==========================================
+        // 4. ADDING ELEMENTS TO CANVAS
+        // ==========================================
+        
+        function addText(content, size, weight, fontFam = 'Poppins') {
+            const text = new fabric.IText(content, {
+                fontFamily: fontFam,
+                fontSize: size,
+                fontWeight: weight,
+                fill: '#1e293b',
+                left: canvas.width / 2,
+                top: canvas.height / 2,
+                originX: 'center',
+                originY: 'center',
+                textAlign: 'center'
+            });
+            canvas.add(text);
+            canvas.setActiveObject(text);
+        }
+
+        function addShape(type) {
+            let shape;
+            const commonObj = { fill: '#64748b', left: canvas.width/2, top: canvas.height/2, originX: 'center', originY: 'center' };
+            
+            if(type === 'rect') shape = new fabric.Rect({ ...commonObj, width: 150, height: 150, rx: 0, ry: 0 });
+            else if(type === 'circle') shape = new fabric.Circle({ ...commonObj, radius: 75 });
+            else if(type === 'triangle') shape = new fabric.Triangle({ ...commonObj, width: 150, height: 150 });
+            else if(type === 'line') shape = new fabric.Line([0,0, 200,0], { stroke: '#64748b', strokeWidth: 5, left: canvas.width/2, top: canvas.height/2, originX: 'center', originY: 'center' });
+            
+            if(shape) {
+                canvas.add(shape);
+                canvas.setActiveObject(shape);
+            }
+        }
+
+        function setCanvasBackground(color) {
+            canvas.backgroundColor = color;
+            canvas.overlayImage = null; 
+            canvas.requestRenderAll();
+            document.getElementById('bgColorHexLabel').innerText = color;
+            document.getElementById('bgColorPicker').value = color;
+            saveHistory();
+        }
+
+        function setCanvasBackgroundPattern(cssPattern) {
+            canvas.backgroundColor = 'transparent';
+            const outer = document.getElementById('posterCanvas').parentElement;
+            outer.style.backgroundImage = cssPattern;
+            outer.style.backgroundColor = document.getElementById('bgColorPicker').value;
+            canvas.requestRenderAll();
+            saveHistory();
+        }
+
+        // --- Image Uploads ---
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(f) {
+                const data = f.target.result;
+                
+                const grid = document.getElementById('uploadedImagesGrid');
+                document.getElementById('noUploadsMsg').classList.add('hidden');
+                
+                const box = document.createElement('div');
+                box.className = "aspect-square border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:border-indigo-500 transition relative group";
+                box.innerHTML = `
+                    <img src="${data}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white text-xs font-bold">Add</div>
+                `;
+                box.onclick = () => addImageToCanvas(data);
+                grid.prepend(box);
+
+                addImageToCanvas(data);
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; 
+        }
+
+        function addImageToCanvas(url) {
+            fabric.Image.fromURL(url, function(img) {
+                if (img.width > canvas.width * 0.8) img.scaleToWidth(canvas.width * 0.8);
+                if (img.height > canvas.height * 0.8) img.scaleToHeight(canvas.height * 0.8);
+                
+                img.set({
+                    left: canvas.width / 2,
+                    top: canvas.height / 2,
+                    originX: 'center',
+                    originY: 'center'
+                });
+                canvas.add(img);
+                canvas.setActiveObject(img);
+            });
+        }
+
+
+        // ==========================================
+        // 5. PROPERTY PANEL CONTROLS
+        // ==========================================
+        
+        function handleSelection(e) {
+            const obj = canvas.getActiveObject();
+            if(!obj) { handleSelectionCleared(); return; }
+
+            document.getElementById('noSelectionMsg').classList.add('hidden');
+            document.getElementById('commonPropertiesGroup').classList.remove('hidden');
+            
+            document.getElementById('propOpacity').value = obj.opacity;
+            document.getElementById('lblOpacity').innerText = Math.round(obj.opacity * 100) + '%';
+
+            document.getElementById('textPropertiesGroup').classList.add('hidden');
+            document.getElementById('shapePropertiesGroup').classList.add('hidden');
+            document.getElementById('imagePropertiesGroup').classList.add('hidden');
+
+            if (obj.type === 'i-text' || obj.type === 'text') {
+                document.getElementById('selectionTypeLabel').innerText = "Editing Text Layer";
+                document.getElementById('textPropertiesGroup').classList.remove('hidden');
+                
+                document.getElementById('propFontFamily').value = obj.fontFamily;
+                document.getElementById('propFontSize').value = Math.round(obj.fontSize);
+                document.getElementById('propTextColor').value = obj.fill;
+                document.getElementById('propLineHeight').value = obj.lineHeight;
+                document.getElementById('lblLineHeight').innerText = obj.lineHeight.toFixed(1);
+                document.getElementById('propCharSpacing').value = obj.charSpacing;
+                document.getElementById('lblCharSpacing').innerText = obj.charSpacing;
+
+                document.getElementById('btnFormatBold').classList.toggle('active', obj.fontWeight === 'bold' || obj.fontWeight >= 700);
+                document.getElementById('btnFormatItalic').classList.toggle('active', obj.fontStyle === 'italic');
+                document.getElementById('btnFormatUnderline').classList.toggle('active', obj.underline);
+
+                ['Left','Center','Right','Justify'].forEach(a => document.getElementById('btnAlign'+a).classList.remove('active'));
+                const align = obj.textAlign.charAt(0).toUpperCase() + obj.textAlign.slice(1);
+                if(document.getElementById('btnAlign'+align)) document.getElementById('btnAlign'+align).classList.add('active');
+
+            } 
+            else if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'triangle' || obj.type === 'polygon' || obj.type === 'line') {
+                document.getElementById('selectionTypeLabel').innerText = "Editing Shape Layer";
+                document.getElementById('shapePropertiesGroup').classList.remove('hidden');
+                
+                document.getElementById('propShapeFill').value = obj.fill || '#000000';
+                document.getElementById('propShapeStroke').value = obj.stroke || '#000000';
+                document.getElementById('propStrokeWidth').value = obj.strokeWidth || 0;
+                document.getElementById('lblStrokeWidth').innerText = obj.strokeWidth || 0;
+
+                if(obj.type === 'rect') {
+                    document.getElementById('propCornerRadiusWrapper').classList.remove('hidden');
+                    document.getElementById('propCornerRadius').value = obj.rx || 0;
+                    document.getElementById('lblCornerRadius').innerText = obj.rx || 0;
+                } else {
+                    document.getElementById('propCornerRadiusWrapper').classList.add('hidden');
+                }
+            } 
+            else if (obj.type === 'image') {
+                document.getElementById('selectionTypeLabel').innerText = "Editing Image Layer";
+                document.getElementById('imagePropertiesGroup').classList.remove('hidden');
+            }
+            else {
+                document.getElementById('selectionTypeLabel').innerText = "Editing Group/Other Layer";
+            }
+        }
+
+        function handleSelectionCleared() {
+            document.getElementById('noSelectionMsg').classList.remove('hidden');
+            document.getElementById('textPropertiesGroup').classList.add('hidden');
+            document.getElementById('shapePropertiesGroup').classList.add('hidden');
+            document.getElementById('imagePropertiesGroup').classList.add('hidden');
+            document.getElementById('commonPropertiesGroup').classList.add('hidden');
+            document.getElementById('selectionTypeLabel').innerText = "Select an element to edit";
+        }
+
+        function updateObjectProperty(property, value) {
+            const obj = canvas.getActiveObject();
+            if(obj) {
+                obj.set(property, value);
+                
+                if(property === 'textAlign') {
+                    ['Left','Center','Right','Justify'].forEach(a => document.getElementById('btnAlign'+a).classList.remove('active'));
+                    const align = value.charAt(0).toUpperCase() + value.slice(1);
+                    if(document.getElementById('btnAlign'+align)) document.getElementById('btnAlign'+align).classList.add('active');
+                }
+
+                canvas.requestRenderAll();
+                saveHistory();
+            }
+        }
+
+        function toggleObjectProperty(property, activeValue, inactiveValue) {
+            const obj = canvas.getActiveObject();
+            if(obj) {
+                const isCurrentlyActive = obj[property] === activeValue || obj[property] === true;
+                const newValue = isCurrentlyActive ? inactiveValue : activeValue;
+                obj.set(property, newValue);
+                
+                event.currentTarget.classList.toggle('active');
+
+                canvas.requestRenderAll();
+                saveHistory();
+            }
+        }
+
+        function adjustObjectValue(property, amount) {
+            const obj = canvas.getActiveObject();
+            if(obj) {
+                const current = obj[property] || 0;
+                let next = current + amount;
+                if(property === 'fontSize' && next < 8) next = 8;
+                obj.set(property, next);
+                
+                if(property === 'fontSize') document.getElementById('propFontSize').value = next;
+                
+                canvas.requestRenderAll();
+                saveHistory();
+            }
+        }
+
+        function flipObject(axis) {
+            const obj = canvas.getActiveObject();
+            if(obj) {
+                obj.set(axis, !obj[axis]);
+                canvas.requestRenderAll();
+                saveHistory();
+            }
+        }
+
+        function arrangeObject(action) {
+            const obj = canvas.getActiveObject();
+            if(!obj) return;
+
+            if(action === 'front') canvas.bringToFront(obj);
+            if(action === 'back') canvas.sendToBack(obj);
+            if(action === 'centerH') { obj.set({left: canvas.width/2, originX: 'center'}); obj.setCoords(); }
+            if(action === 'centerV') { obj.set({top: canvas.height/2, originY: 'center'}); obj.setCoords(); }
+            
+            canvas.requestRenderAll();
+            updateLayersPanel();
+        }
+
+        function deleteSelectedObject() {
+            const actives = canvas.getActiveObjects();
+            if(actives.length) {
+                actives.forEach(a => canvas.remove(a));
+                canvas.discardActiveObject();
+                canvas.requestRenderAll();
+                handleSelectionCleared();
+            }
+        }
+
+        function cloneSelectedObject() {
+            const obj = canvas.getActiveObject();
+            if(!obj) return;
+            
+            obj.clone(function(cloned) {
+                canvas.discardActiveObject();
+                cloned.set({
+                    left: cloned.left + 20,
+                    top: cloned.top + 20,
+                    evented: true,
+                });
+                if (cloned.type === 'activeSelection') {
+                    cloned.canvas = canvas;
+                    cloned.forEachObject(function(o) { canvas.add(o); });
+                    cloned.setCoords();
+                } else {
+                    canvas.add(cloned);
+                }
+                canvas.setActiveObject(cloned);
+                canvas.requestRenderAll();
+            });
+        }
+
+
+        // ==========================================
+        // 6. LAYERS PANEL MANAGER
+        // ==========================================
+        
+        function updateLayersPanel() {
+            const list = document.getElementById('layersListContainer');
+            if(!list) return;
+            list.innerHTML = '';
+            
+            const objects = canvas.getObjects();
+            for(let i = objects.length - 1; i >= 0; i--) {
+                const obj = objects[i];
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-2 bg-white border border-gray-200 rounded cursor-pointer hover:border-indigo-300 transition";
+                
+                let icon = 'fa-shapes'; let name = 'Shape';
+                if(obj.type === 'i-text' || obj.type === 'text') { icon = 'fa-font'; name = obj.text.substring(0, 12) + (obj.text.length > 12 ? '...' : ''); }
+                else if(obj.type === 'image') { icon = 'fa-image'; name = 'Image Layer'; }
+                else if(obj.type === 'rect') { icon = 'fa-square'; name = 'Rectangle'; }
+                else if(obj.type === 'circle') { icon = 'fa-circle'; name = 'Circle'; }
+
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden" onclick="selectLayerInCanvas(${i})">
+                        <i class="fa-solid ${icon} text-gray-400 w-5"></i>
+                        <span class="text-xs font-semibold text-gray-700 truncate">${name}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="moveLayerInCanvas(${i}, 1)" class="w-6 h-6 rounded hover:bg-gray-100 text-gray-500 flex items-center justify-center" title="Up"><i class="fa-solid fa-angle-up text-[10px]"></i></button>
+                        <button onclick="moveLayerInCanvas(${i}, -1)" class="w-6 h-6 rounded hover:bg-gray-100 text-gray-500 flex items-center justify-center" title="Down"><i class="fa-solid fa-angle-down text-[10px]"></i></button>
+                    </div>
+                `;
+
+                if(canvas.getActiveObject() === obj) {
+                    div.classList.add('border-indigo-500', 'bg-indigo-50');
+                }
+
+                list.appendChild(div);
+            }
+        }
+
+        function selectLayerInCanvas(index) {
+            const obj = canvas.item(index);
+            if(obj) {
+                canvas.setActiveObject(obj);
+                canvas.requestRenderAll();
+                updateLayersPanel();
+            }
+        }
+
+        function moveLayerInCanvas(index, dir) {
+            const obj = canvas.item(index);
+            if(!obj) return;
+            
+            if(dir === 1 && index < canvas.getObjects().length - 1) {
+                canvas.moveTo(obj, index + 1);
+            } else if (dir === -1 && index > 0) {
+                canvas.moveTo(obj, index - 1);
+            }
+            canvas.requestRenderAll();
+            saveHistory();
+        }
+
+        // ==========================================
+        // 7. TEMPLATES ENGINE
+        // ==========================================
+        
+        function renderTemplatesList(category) {
+            const target = document.getElementById('templateListContainer');
+            target.innerHTML = '';
+            
+            const filtered = category === 'All' ? posterTemplates : posterTemplates.filter(t => t.cat === category);
+            
+            filtered.forEach((tpl, idx) => {
+                const box = document.createElement('div');
+                box.className = "aspect-[3/4] bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-500 shadow-sm hover:shadow-md transition relative group flex items-center justify-center";
+                box.onclick = () => loadTemplateOntoCanvas(tpl);
+                
+                const scale = 140 / Math.max(tpl.w, tpl.h);
+                const mock = document.createElement('div');
+                mock.style.width = tpl.w + 'px';
+                mock.style.height = tpl.h + 'px';
+                mock.style.transform = `scale(${scale})`;
+                mock.style.transformOrigin = 'center center';
+                mock.style.backgroundColor = tpl.bg;
+                mock.style.position = 'relative';
+
+                tpl.items.forEach(item => {
+                    const el = document.createElement('div');
+                    el.style.position = 'absolute';
+                    el.style.left = item.left + 'px';
+                    el.style.top = item.top + 'px';
+                    
+                    if(item.type === 'rect') {
+                        el.style.width = item.w + 'px'; el.style.height = item.h + 'px';
+                        el.style.backgroundColor = item.fill;
+                        if(item.stroke) el.style.border = `${item.strokeWidth}px solid ${item.stroke}`;
+                        if(item.rx) el.style.borderRadius = item.rx + 'px';
+                    } else if (item.type === 'circle') {
+                        el.style.width = (item.r*2) + 'px'; el.style.height = (item.r*2) + 'px';
+                        el.style.backgroundColor = item.fill;
+                        el.style.borderRadius = '50%';
+                    } else if (item.type === 'text') {
+                        el.innerText = item.content;
+                        el.style.color = item.fill;
+                        el.style.fontSize = item.size + 'px';
+                        el.style.fontFamily = `'${item.font}', sans-serif`;
+                        el.style.fontWeight = item.weight || 'normal';
+                        el.style.whiteSpace = 'pre';
+                        if(item.align === 'center') {
+                            el.style.width = '100%';
+                            el.style.textAlign = 'center';
+                            el.style.left = '0';
+                        }
+                    }
+                    mock.appendChild(el);
+                });
+
+                box.appendChild(mock);
+
+                const overlay = document.createElement('div');
+                overlay.className = "absolute inset-0 bg-indigo-900/60 hidden group-hover:flex flex-col items-center justify-center p-2 text-center transition";
+                overlay.innerHTML = `
+                    <i class="fa-solid fa-wand-magic-sparkles text-2xl text-white mb-2"></i>
+                    <span class="text-white font-bold text-xs">${tpl.name}</span>
+                `;
+                box.appendChild(overlay);
+
+                target.appendChild(box);
+            });
+        }
+
+        function loadTemplateOntoCanvas(tpl) {
+            if(confirm("Loading a template will clear your current canvas. Continue?")) {
+                canvas.clear();
+                
+                document.getElementById('canvasSizeSelector').value = 'custom';
+                document.getElementById('inpCustomWidth').value = tpl.w;
+                document.getElementById('inpCustomHeight').value = tpl.h;
+                applySize(tpl.w, tpl.h);
+                
+                canvas.backgroundColor = tpl.bg;
+                document.getElementById('bgColorPicker').value = tpl.bg;
+                document.getElementById('bgColorHexLabel').innerText = tpl.bg;
+                
+                const outer = document.getElementById('posterCanvas').parentElement;
+                outer.style.backgroundImage = 'none';
+
+                tpl.items.forEach(item => {
+                    let obj;
+                    const common = { left: item.left, top: item.top, fill: item.fill };
+                    if(item.originX) common.originX = item.originX;
+                    if(item.originY) common.originY = item.originY;
+
+                    if(item.type === 'rect') {
+                        obj = new fabric.Rect({ ...common, width: item.w, height: item.h, rx: item.rx||0, ry: item.rx||0, stroke: item.stroke||null, strokeWidth: item.strokeWidth||0 });
+                    } else if (item.type === 'circle') {
+                        obj = new fabric.Circle({ ...common, radius: item.r });
+                    } else if (item.type === 'text') {
+                        obj = new fabric.IText(item.content, { 
+                            ...common, 
+                            fontSize: item.size, 
+                            fontFamily: item.font, 
+                            fontWeight: item.weight || 'normal',
+                            textAlign: item.align || 'left',
+                            fontStyle: item.style || 'normal',
+                            lineHeight: item.lineHeight || 1.16,
+                            charSpacing: item.tracking || 0
+                        });
+                        if(item.width) {
+                            obj = new fabric.Textbox(item.content, { 
+                                ...common, 
+                                width: item.width,
+                                fontSize: item.size, 
+                                fontFamily: item.font, 
+                                fontWeight: item.weight || 'normal',
+                                textAlign: item.align || 'left',
+                                splitByGrapheme: false
+                            });
+                        }
+                    }
+
+                    if(obj) canvas.add(obj);
+                });
+
+                canvas.renderAll();
+                setTimeout(saveHistory, 200);
+                
+                if(window.innerWidth < 1024) {
+                    document.getElementById('sidebar-drawer').classList.add('w-0');
+                    document.getElementById('sidebar-drawer').classList.remove('w-72');
+                }
+            }
+        }
+
+
+        // ==========================================
+        // 8. EXPORT ENGINE
+        // ==========================================
+        
+        function exportCanvas(format) {
+            canvas.discardActiveObject(); 
+            canvas.requestRenderAll();
+            
+            let dataUrl;
+            
+            if(format === 'png' || format === 'jpg') {
+                const ext = format === 'jpg' ? 'jpeg' : 'png';
+                dataUrl = canvas.toDataURL({
+                    format: ext,
+                    quality: 1,
+                    multiplier: 1 
+                });
+                
+                const link = document.createElement('a');
+                link.download = `FreePoster_${Date.now()}.${ext}`;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } 
+            else if (format === 'pdf') {
+                dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 1, multiplier: 1 });
+                
+                const { jsPDF } = window.jspdf;
+                const orientation = canvas.width > canvas.height ? 'l' : 'p';
+                const pdf = new jsPDF(orientation, 'px', [canvas.width, canvas.height]);
+                pdf.addImage(dataUrl, 'JPEG', 0, 0, canvas.width, canvas.height);
+                pdf.save(`FreePoster_${Date.now()}.pdf`);
+            }
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if(e.key === 'Delete' || e.key === 'Backspace') {
+                if(document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || canvas.isEditing) return;
+                deleteSelectedObject();
+            }
+            if(e.ctrlKey && e.key === 'z') { e.preventDefault(); canvasUndo(); }
+            if(e.ctrlKey && e.key === 'y') { e.preventDefault(); canvasRedo(); }
+        });
+
+    </script>
+</body>
+</html>

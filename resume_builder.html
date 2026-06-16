@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Resume & CV Builder - 100+ Templates</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* Import Premium Fonts for Templates */
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Oswald:wght@500;700&family=Lato:wght@400;700;900&family=Montserrat:wght@400;700&display=swap');
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; overflow-x: hidden; }
+        .landing-bg { background: linear-gradient(135deg, #e0e7ff 0%, #fae8ff 50%, #e0f2fe 100%); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+        
+        .input-field { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; outline: none; font-weight: 500; font-size: 0.875rem; transition: all 0.2s; }
+        .input-field:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: #475569; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        /* A4 Paper Standards */
+        .a4-paper { width: 800px; min-height: 1131px; background: white; margin: 0 auto; box-shadow: 0 15px 35px rgba(0,0,0,0.15); position: relative; box-sizing: border-box; overflow: hidden; }
+        
+        /* Form Output Standard Styles */
+        .res-heading { text-align: center; font-size: 28px; font-weight: 900; letter-spacing: 2px; margin-bottom: 25px; text-transform: uppercase; }
+        .res-section-title { background-color: #e2e8f0; padding: 6px 10px; font-size: 14px; font-weight: bold; text-transform: uppercase; margin: 20px 0 10px 0; border: 1px solid #cbd5e1; }
+        .res-text { font-size: 13px; line-height: 1.6; }
+        .edu-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        .edu-table th, .edu-table td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        .edu-table th { background-color: #f8fafc; font-weight: bold; }
+        
+        /* Editable Areas in Templates */
+        [contenteditable="true"] { outline: none; border: 1px dashed transparent; transition: all 0.2s; padding: 2px; }
+        [contenteditable="true"]:hover { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
+        [contenteditable="true"]:focus { border-color: #1d4ed8; background: rgba(59,130,246,0.1); cursor: text; }
+        .editable-img { cursor: pointer; border: 2px dashed transparent; transition: all 0.2s; }
+        .editable-img:hover { border-color: #3b82f6; filter: brightness(0.9); }
+
+        /* Real Live Thumbnail Trick */
+        .template-thumb-wrapper { width: 100%; aspect-ratio: 1 / 1.414; position: relative; overflow: hidden; background: white; border-radius: 12px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.3s; }
+        .template-thumb-wrapper:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15); border-color: #3b82f6; }
+        /* Scale down the 800x1131 A4 paper to fit the grid cell */
+        .template-thumb-scaler { width: 800px; height: 1131px; transform-origin: top left; pointer-events: none; position: absolute; top: 0; left: 0; }
+
+        @media print {
+            body { background: white; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .a4-paper { box-shadow: none; margin: 0; width: 210mm; height: 297mm; page-break-after: always; transform: scale(1) !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50 no-print border-b-4 border-blue-600">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-full font-bold transition">
+                <i class="fa-solid fa-arrow-left"></i> Main Dashboard
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 text-xl flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice text-blue-500"></i> Pro Resume & CV Studio
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col relative w-full">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: LANDING DASHBOARD                  -->
+        <!-- ========================================== -->
+        <div id="landingView" class="w-full flex-grow flex flex-col items-center pt-12 pb-20 px-4 landing-bg">
+            <div class="text-center max-w-4xl mx-auto mb-12">
+                <div class="inline-block bg-blue-100 text-blue-700 font-bold px-5 py-1.5 rounded-full text-xs mb-4 uppercase tracking-widest shadow-sm border border-blue-200">
+                    <i class="fa-solid fa-crown text-amber-500 mr-1"></i> Ultimate Smart CV Hub
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black text-gray-900 mb-6 leading-tight tracking-tight">Create 100% Professional <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Resumes & CVs</span></h1>
+                <p class="text-gray-600 font-semibold text-lg max-w-2xl mx-auto">Fill a form for a standard resume, compile a full CV with documents, or edit directly from 100+ fully ready premium templates.</p>
+            </div>
+
+            <!-- 3 Main Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16 w-full px-4">
+                <button onclick="switchView('form')" class="glass p-8 rounded-2xl text-center shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 border-t-4 border-blue-600 group">
+                    <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-4 mx-auto group-hover:scale-110 transition"><i class="fa-solid fa-file-lines"></i></div>
+                    <h3 class="text-2xl font-black text-gray-800 mb-2">Create Form Resume</h3>
+                    <p class="text-gray-500 text-sm font-medium">Fill structured input details to auto-compile a pixel-perfect standard professional resume layout.</p>
+                </button>
+
+                <button onclick="switchView('cv')" class="glass p-8 rounded-2xl text-center shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 border-t-4 border-purple-600 group">
+                    <div class="w-20 h-20 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-3xl mb-4 mx-auto group-hover:scale-110 transition"><i class="fa-solid fa-layer-group"></i></div>
+                    <h3 class="text-2xl font-black text-gray-800 mb-2">Compile CV Portfolio</h3>
+                    <p class="text-gray-500 text-sm font-medium">Upload Resume + Certificates. Resize and adjust them inside A4 pages into a single PDF.</p>
+                </button>
+
+                <button onclick="switchView('gallery')" class="glass p-8 rounded-2xl text-center shadow-lg hover:shadow-2xl transition transform hover:-translate-y-2 border-t-4 border-emerald-600 group">
+                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mb-4 mx-auto group-hover:scale-110 transition"><i class="fa-solid fa-palette"></i></div>
+                    <h3 class="text-2xl font-black text-gray-800 mb-2">100+ Ready Templates</h3>
+                    <p class="text-gray-500 text-sm font-medium">Browse 100+ fully filled premium resumes. Click to edit any text/photo instantly and print.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2 & 3: FORM BUILDER & PREVIEW (Unchanged as approved) -->
+        <!-- ========================================== -->
+        <!-- Form View -->
+        <div id="formView" class="hidden w-full max-w-5xl mx-auto px-4 py-8 mb-20 no-print">
+            <div class="flex justify-between items-center mb-6">
+                <div><h2 class="text-3xl font-black text-gray-800"><i class="fa-solid fa-pen-to-square text-blue-600 mr-2"></i> Resume Form Creator</h2></div>
+                <button onclick="switchView('landing')" class="text-sm font-bold text-red-500 hover:text-white hover:bg-red-600 bg-red-50 px-5 py-2.5 rounded-lg border border-red-200 transition">Cancel</button>
+            </div>
+            <form id="resumeForm" class="space-y-6">
+                <!-- Basic -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-regular fa-user mr-2"></i>1. Basic Identity</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div><label class="form-label">Heading Format *</label><select id="f_heading" class="input-field bg-gray-50"><option>RESUME</option><option>CURRICULUM VITAE</option></select></div>
+                        <div><label class="form-label">Full Name *</label><input type="text" id="f_name" class="input-field" placeholder="Sachin Kumar"></div>
+                        <div><label class="form-label">Profile / Designation *</label><input type="text" id="f_profile" class="input-field" placeholder="Computer Operator"></div>
+                        <div class="row-span-2 flex flex-col justify-center items-center border-2 border-dashed border-blue-200 rounded-xl p-4 bg-blue-50/50">
+                            <label class="form-label mb-2">Upload Profile Photo</label>
+                            <input type="file" id="f_photo" accept="image/*" onchange="previewMainFormImage(event)" class="text-xs mb-3 font-bold text-blue-600 cursor-pointer w-full pl-8">
+                            <img id="photoPreview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-24 h-28 object-cover border-2 border-white rounded shadow-md bg-white">
+                        </div>
+                        <div class="md:col-span-2"><label class="form-label">Career Objective</label><textarea id="f_obj_custom" rows="3" class="input-field" placeholder="To make contribution in the organization..."></textarea></div>
+                    </div>
+                </div>
+                <!-- Contact -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-solid fa-location-dot mr-2"></i>2. Contact Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div><label class="form-label">House No. *</label><input type="text" id="f_house" class="input-field" placeholder="P - 171"></div>
+                        <div><label class="form-label">Landmark / Gali No.</label><input type="text" id="f_gali" class="input-field" placeholder="Gali No. 5"></div>
+                        <div><label class="form-label">Area / Locality *</label><input type="text" id="f_area" class="input-field" placeholder="Patel Nagar"></div>
+                        <div><label class="form-label">State / City *</label><input type="text" id="f_city" class="input-field" placeholder="New Delhi"></div>
+                        <div><label class="form-label">Pincode *</label><input type="text" id="f_pin" class="input-field" placeholder="110008"></div>
+                        <div><label class="form-label">Mobile No. *</label><input type="text" id="f_mobile" class="input-field" placeholder="+91 1234567890"></div>
+                        <div class="md:col-span-3"><label class="form-label">Email Id</label><input type="email" id="f_email" class="input-field" placeholder="sachin@gmail.com"></div>
+                    </div>
+                </div>
+                <!-- Education -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-solid fa-graduation-cap mr-2"></i>3. Academic Qualifications</h3>
+                    <div id="eduContainer" class="space-y-4">
+                        <div class="edu-row flex flex-col md:flex-row gap-3 items-end bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <div class="w-full md:w-1/4"><label class="form-label">Qualification</label><input type="text" class="input-field edu-qual" placeholder="10th"></div>
+                            <div class="w-full md:w-2/4"><label class="form-label">Board / University</label><input type="text" class="input-field edu-board" placeholder="CBSE Board"></div>
+                            <div class="w-full md:w-1/6"><label class="form-label">Year</label><input type="text" class="input-field edu-year" placeholder="2014"></div>
+                            <div class="w-full md:w-1/6"><label class="form-label">Per %</label><input type="text" class="input-field edu-per" placeholder="82%"></div>
+                            <button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg h-10 w-10 shrink-0 hover:bg-red-600 hover:text-white transition shadow-sm"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <button type="button" onclick="addNewFormEduRow()" class="mt-4 bg-blue-50 text-blue-600 border border-blue-200 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-600 hover:text-white transition shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Add More Qualification</button>
+                </div>
+                <!-- Skills & Exp -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-solid fa-star mr-2"></i>Other Skills</h3>
+                        <div id="skillContainer" class="space-y-3"><div class="flex gap-2"><input type="text" class="input-field skill-input" placeholder="Computer Knowledge"><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg w-10 h-10 shrink-0 hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-trash"></i></button></div></div>
+                        <button type="button" onclick="addNewFormListItemRow('skillContainer', 'skill-input', 'Data Entry')" class="mt-4 bg-blue-50 text-blue-600 border border-blue-200 px-5 py-2 rounded-lg font-bold text-sm shadow-sm hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-plus mr-1"></i> Add Skill</button>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                        <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-solid fa-briefcase mr-2"></i>Work Experience</h3>
+                        <div id="expContainer" class="space-y-3"><div class="flex gap-2"><input type="text" class="input-field exp-input" placeholder="2 Years Experience..."><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg w-10 h-10 shrink-0 hover:bg-red-600 hover:text-white transition"><i class="fa-solid fa-trash"></i></button></div></div>
+                        <button type="button" onclick="addNewFormListItemRow('expContainer', 'exp-input', 'Worked at ABC Pvt Ltd')" class="mt-4 bg-blue-50 text-blue-600 border border-blue-200 px-5 py-2 rounded-lg font-bold text-sm shadow-sm hover:bg-blue-600 hover:text-white transition"><i class="fa-solid fa-plus mr-1"></i> Add Experience</button>
+                    </div>
+                </div>
+                <!-- Personal -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+                    <h3 class="font-black text-blue-900 text-lg mb-4 border-b pb-2 uppercase"><i class="fa-solid fa-user-lock mr-2"></i>6. Personal Info</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div><label class="form-label">Gender *</label><select id="f_gender" class="input-field"><option>Male</option><option>Female</option></select></div>
+                        <div><label class="form-label">Father's Name *</label><input type="text" id="f_father" class="input-field"></div>
+                        <div><label class="form-label">Date of Birth *</label><input type="date" id="f_dob" class="input-field text-gray-600"></div>
+                        <div><label class="form-label">Languages *</label><input type="text" id="f_lang" class="input-field" placeholder="Hindi, English"></div>
+                        <div><label class="form-label">Nationality *</label><input type="text" id="f_nation" value="Indian" class="input-field"></div>
+                        <div><label class="form-label">Marital Status *</label><select id="f_marital" class="input-field"><option>Unmarried</option><option>Married</option></select></div>
+                    </div>
+                </div>
+                <div class="text-center pt-4">
+                    <button type="button" onclick="triggerMainResumeCompilation()" class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-16 py-5 rounded-2xl font-black text-xl shadow-xl transition transform hover:-translate-y-1">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> GENERATE RESUME
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Form Output Preview -->
+        <div id="previewView" class="hidden w-full max-w-5xl mx-auto px-4 py-8 mb-10 no-print">
+            <div class="flex flex-col md:flex-row justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8">
+                <button onclick="switchView('form')" class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 transition border shadow-sm"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit Data</button>
+                <div class="flex gap-4 mt-4 md:mt-0">
+                    <button onclick="executeA4PDFExport('resumeCanvas', 'My_Compiled_Resume')" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition"><i class="fa-solid fa-file-pdf mr-2"></i> Download PDF</button>
+                    <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition"><i class="fa-solid fa-print mr-2"></i> Print</button>
+                </div>
+            </div>
+            <div class="bg-slate-300 p-4 sm:p-10 rounded-2xl flex justify-center overflow-x-auto shadow-inner border border-gray-300">
+                <div id="resumeCanvas" class="a4-paper p-[18mm]">
+                    <div id="out_heading" class="res-heading">RESUME</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <div id="out_name" style="font-size: 24px; font-weight: 900; margin-bottom: 2px;">Name</div>
+                            <div id="out_profile" style="font-size: 13px; font-weight: bold; margin-bottom: 12px; color: #333;">Profile</div>
+                            <div class="res-text">
+                                <span id="out_address1">Add1</span><br><span id="out_address2">Add2</span><br><span id="out_address3">Add3</span><br>
+                                Mob No. : <span id="out_mobile">Mobile</span><br>Email Id : <span id="out_email">Email</span>
+                            </div>
+                        </div>
+                        <div style="width: 30mm; height: 38mm; border: 2px solid #ccc; padding: 2px; background: white;">
+                            <img id="out_photo" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                    </div>
+                    <div class="res-section-title">CAREER OBJECTIVE</div><div id="out_objective" class="res-text">Objective</div>
+                    <div id="sec_education"><div class="res-section-title">ACADEMIC QUALIFICATION</div><table class="edu-table"><thead><tr><th style="width:8%;">S.No.</th><th style="width:27%;">Qualification</th><th style="width:35%;">Board</th><th style="width:15%;">Year</th><th style="width:15%;">Per %</th></tr></thead><tbody id="out_edu_body"></tbody></table></div>
+                    <div id="sec_skills"><div class="res-section-title">OTHER QUALIFICATION</div><ul id="out_skill_body" class="res-text pl-5 m-0"></ul></div>
+                    <div id="sec_exp"><div class="res-section-title">WORK EXPERIANCE</div><ul id="out_exp_body" class="res-text pl-5 m-0"></ul></div>
+                    <div class="res-section-title">PERSONAL INFORMATION</div>
+                    <div class="personal-grid"><div>Father's Name</div><div>:</div><div id="out_father"></div><div>Date of Birth</div><div>:</div><div id="out_dob"></div><div>Language Known</div><div>:</div><div id="out_lang"></div><div>Gender</div><div>:</div><div id="out_gender"></div><div>Nationality</div><div>:</div><div id="out_nation"></div><div>Marital Status</div><div>:</div><div id="out_marital"></div></div>
+                    <div class="res-section-title">DECLARATION</div><div class="res-text">I hereby declared that the above information given by me is true to best of my Knowledge.</div>
+                    <div style="margin-top: 30px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between;"><div><div>Date :</div><div style="margin-top: 5px;">Place : <span id="out_place"></span></div></div><div style="text-align: right; align-self: flex-end;">(<span id="out_sign_name"></span>)</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: CV COMPILER WITH ADJUSTMENTS       -->
+        <!-- ========================================== -->
+        <div id="cvView" class="hidden w-full max-w-5xl mx-auto px-4 py-8 mb-20 no-print">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-black text-purple-700"><i class="fa-solid fa-layer-group mr-2"></i> CV Portfolio Compiler</h2>
+                    <p class="text-sm text-gray-500 font-bold mt-1">Upload documents. Size them to fit perfectly inside an A4 page.</p>
+                </div>
+                <button onclick="switchView('landing')" class="bg-gray-100 text-gray-700 font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-gray-200 transition border shadow-sm"><i class="fa-solid fa-arrow-left mr-2"></i>Back</button>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl border border-purple-200 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <button onclick="document.getElementById('cvMainUpload').click()" class="border-2 border-dashed border-purple-400 bg-purple-50 rounded-2xl p-8 hover:bg-purple-100 transition flex flex-col items-center shadow-sm">
+                        <i class="fa-solid fa-file-invoice text-4xl text-purple-600 mb-3"></i>
+                        <h3 class="font-black text-gray-800 text-lg">Add Resume (Page 1)</h3>
+                        <span class="text-xs text-purple-600 font-bold mt-2 bg-white px-3 py-1 rounded-full border border-purple-200">Click to Upload JPG/PNG</span>
+                    </button>
+                    <input type="file" accept="image/*" id="cvMainUpload" onchange="openSizeAdjustmentModal(event, 'main')" class="hidden">
+
+                    <button onclick="document.getElementById('cvDocUpload').click()" class="border-2 border-dashed border-gray-400 bg-gray-50 rounded-2xl p-8 hover:bg-gray-100 transition flex flex-col items-center shadow-sm">
+                        <i class="fa-solid fa-certificate text-4xl text-gray-500 mb-3"></i>
+                        <h3 class="font-black text-gray-800 text-lg">Add Certificates</h3>
+                        <span class="text-xs text-gray-600 font-bold mt-2 bg-white px-3 py-1 rounded-full border border-gray-200">Click to Upload Documents</span>
+                    </button>
+                    <input type="file" accept="image/*" id="cvDocUpload" onchange="openSizeAdjustmentModal(event, 'doc')" class="hidden">
+                </div>
+
+                <h3 class="font-black text-gray-800 mb-4 border-b pb-2 text-lg">Final A4 Pages Sequence</h3>
+                <div id="cvPagesList" class="flex flex-wrap gap-5 mb-10 bg-slate-50 p-6 rounded-2xl border border-gray-200 min-h-[150px]">
+                    <div class="text-gray-400 text-base font-bold italic w-full text-center mt-6">No pages added yet. Upload documents above.</div>
+                </div>
+
+                <div class="text-center border-t border-gray-200 pt-8">
+                    <button onclick="compileFinalCV()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-4 rounded-2xl font-black text-xl shadow-xl flex items-center gap-3 mx-auto transform hover:-translate-y-1 transition hover:shadow-2xl">
+                        <i class="fa-solid fa-file-pdf"></i> Generate Final CV PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- A4 Modal Slider Adjuster -->
+        <div id="adjustmentModal" class="hidden fixed inset-0 bg-slate-900/85 z-[100] flex items-center justify-center p-4 backdrop-blur-md">
+            <div class="bg-white rounded-3xl p-8 w-full max-w-md flex flex-col items-center shadow-2xl">
+                <h3 class="text-2xl font-black text-gray-800 mb-1">Adjust Document Size</h3>
+                <p class="text-xs text-gray-500 font-bold mb-6 bg-gray-100 px-4 py-1.5 rounded-full">The white box is your final A4 PDF Page.</p>
+
+                <!-- Exact A4 Proportion Box -->
+                <div id="a4PreviewBox" class="bg-white shadow-lg relative flex justify-center items-center overflow-hidden" style="width: 210px; height: 297px; border: 1px solid #cbd5e1;">
+                    <img id="adjImage" src="" style="width: 90%; max-height: 98%; object-fit: contain;">
+                </div>
+
+                <!-- Slider -->
+                <div class="w-full mt-8 bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                    <div class="flex justify-between mb-3">
+                        <label class="text-xs font-bold text-gray-600 uppercase">Image Scaling</label>
+                        <span id="adjScaleValue" class="text-xs font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded">90%</span>
+                    </div>
+                    <input type="range" id="adjSlider" min="20" max="100" value="90" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updateAdjScale(this.value)">
+                </div>
+
+                <div class="flex gap-4 mt-6 w-full">
+                    <button onclick="document.getElementById('adjustmentModal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-800 py-3.5 rounded-xl font-bold hover:bg-gray-300 transition">Cancel</button>
+                    <button onclick="confirmAndAttachA4Page()" id="btnAttachOK" class="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-black hover:bg-blue-700 transition shadow-lg"><i class="fa-solid fa-check mr-2"></i> OK & Attach</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 5: 100+ HIGH-QUALITY READY TEMPLATES GALLERY                     -->
+        <!-- ===================================================================== -->
+        <div id="galleryView" class="hidden w-full max-w-7xl mx-auto px-4 py-8 mb-20 no-print">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-8 rounded-3xl border border-gray-200 shadow-sm mb-10 gap-4">
+                <div>
+                    <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-700 mb-2"><i class="fa-solid fa-palette text-emerald-500 mr-2"></i> 100+ Premium Templates</h2>
+                    <p class="text-base text-gray-500 font-bold">100+ Fully ready-made designs. What you see is exactly what you get. Click to edit!</p>
+                </div>
+                <button onclick="switchView('landing')" class="bg-gray-100 border text-gray-700 font-bold px-6 py-3 rounded-xl text-sm hover:bg-gray-200 transition shadow-sm"><i class="fa-solid fa-arrow-left mr-2"></i> Back to Hub</button>
+            </div>
+            
+            <!-- Gallery Grid -->
+            <div id="massiveTemplateGridContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 lg:gap-8 pb-20">
+                <!-- 100+ Visual Thumbnails injected here -->
+            </div>
+        </div>
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 6: LIVE INTERACTIVE A4 SHEET EDITOR                              -->
+        <!-- ===================================================================== -->
+        <div id="editorView" class="hidden w-full max-w-5xl mx-auto px-4 py-8 mb-10 no-print">
+            <div class="flex flex-col sm:flex-row justify-between items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-8 gap-4">
+                <button onclick="switchView('gallery')" class="bg-gray-100 text-gray-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-gray-200 border transition shadow-sm"><i class="fa-solid fa-arrow-left mr-2"></i> Back to Gallery</button>
+                <div class="text-sm font-bold text-emerald-700 bg-emerald-50 px-5 py-2.5 rounded-full border border-emerald-200 flex items-center shadow-inner"><i class="fa-solid fa-keyboard mr-2 text-lg animate-pulse"></i> Live Editor: Click text to type. Click photo to change.</div>
+                <button onclick="executeA4PDFExport('editableA4CanvasFrame', 'Premium_Resume')" class="bg-red-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md text-sm hover:bg-red-700 transition flex items-center"><i class="fa-solid fa-file-pdf mr-2"></i> Download Final PDF</button>
+            </div>
+            
+            <input type="file" id="templateHiddenInputFilePicker" accept="image/*" onchange="handleLiveTemplateImageSwap(event)" class="hidden">
+            
+            <!-- Canvas Wrapper -->
+            <div class="bg-slate-300 p-6 sm:p-12 rounded-3xl flex justify-center overflow-x-auto shadow-inner border border-gray-400">
+                <div id="editableA4CanvasFrame" class="a4-paper bg-white relative">
+                    <!-- Template HTML dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PROCESSING OVERLAY -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white/95 z-[200] items-center justify-center flex-col backdrop-blur-sm">
+        <i class="fa-solid fa-spinner fa-spin text-6xl text-blue-600 mb-6"></i><h2 class="text-3xl font-black text-gray-800">Generating High-Res PDF...</h2>
+        <p class="text-gray-500 font-bold mt-2">Please wait a moment</p>
+    </div>
+
+    <script>
+        // --- Navigation ---
+        function switchView(viewName) {
+            ['landing', 'form', 'preview', 'cv', 'gallery', 'editor'].forEach(v => {
+                document.getElementById(v + 'View').classList.add('hidden');
+            });
+            document.getElementById(viewName + 'View').classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        // =====================================================================
+        // SECTION 1: FORM BUILDER
+        // =====================================================================
+        function previewMainFormImage(event) {
+            const file = event.target.files[0];
+            if(file) {
+                const r = new FileReader(); r.onload = function(e) {
+                    document.getElementById('photoPreview').src = e.target.result;
+                    document.getElementById('out_photo').src = e.target.result;
+                }; r.readAsDataURL(file);
+            }
+        }
+        function addNewFormEduRow() {
+            const row = document.createElement('div'); row.className = "edu-row flex flex-col md:flex-row gap-3 items-end bg-gray-50 p-4 rounded-xl border border-gray-200 mt-3";
+            row.innerHTML = `<div class="w-full md:w-1/4"><label class="form-label">Qualification</label><input type="text" class="input-field edu-qual"></div><div class="w-full md:w-2/4"><label class="form-label">Board</label><input type="text" class="input-field edu-board"></div><div class="w-full md:w-1/6"><label class="form-label">Year</label><input type="text" class="input-field edu-year"></div><div class="w-full md:w-1/6"><label class="form-label">Per %</label><input type="text" class="input-field edu-per"></div><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg h-10 w-10 shrink-0"><i class="fa-solid fa-trash"></i></button>`;
+            document.getElementById('eduContainer').appendChild(row);
+        }
+        function addNewFormListItemRow(containerId, inputClass, placeholder) {
+            const row = document.createElement('div'); row.className = "flex gap-2 mt-3";
+            row.innerHTML = `<input type="text" class="input-field ${inputClass}" placeholder="${placeholder}"><button type="button" onclick="this.parentElement.remove()" class="bg-red-100 text-red-600 p-2 rounded-lg w-10 h-10 shrink-0"><i class="fa-solid fa-trash"></i></button>`;
+            document.getElementById(containerId).appendChild(row);
+        }
+        function triggerMainResumeCompilation() {
+            document.getElementById('out_heading').innerText = document.getElementById('f_heading').value;
+            document.getElementById('out_name').innerText = document.getElementById('f_name').value || "Sachin Kumar";
+            document.getElementById('out_sign_name').innerText = document.getElementById('f_name').value || "Sachin Kumar";
+            document.getElementById('out_profile').innerText = document.getElementById('f_profile').value || "Computer Operator";
+            document.getElementById('out_address1').innerText = (document.getElementById('f_house').value + " " + document.getElementById('f_gali').value).trim() || "P - 171 Gali No. 5";
+            document.getElementById('out_address2').innerText = document.getElementById('f_area').value || "Baljeet Nagar, Patel Nagar";
+            document.getElementById('out_address3').innerText = (document.getElementById('f_city').value + " - " + document.getElementById('f_pin').value) || "New Delhi - 110008";
+            document.getElementById('out_mobile').innerText = document.getElementById('f_mobile').value || "+91 1234567890";
+            document.getElementById('out_email').innerText = document.getElementById('f_email').value || "sachinkumar@gmail.com";
+            document.getElementById('out_place').innerText = document.getElementById('f_city').value || "New Delhi";
+            document.getElementById('out_objective').innerText = document.getElementById('f_obj_custom').value || "To make contribution in the organization with best of my ability and also to Develop new skills during the interaction to achieve new heights.";
+
+            let tHTML = ""; let c = 1;
+            document.querySelectorAll('.edu-row').forEach(r => {
+                let q=r.querySelector('.edu-qual').value, b=r.querySelector('.edu-board').value, y=r.querySelector('.edu-year').value, p=r.querySelector('.edu-per').value;
+                if(q||b||y||p) tHTML += `<tr><td style="text-align:center;">${c++}</td><td>${q}</td><td>${b}</td><td>${y}</td><td>${p}</td></tr>`;
+            });
+            document.getElementById('out_edu_body').innerHTML = tHTML || `<tr><td style="text-align:center;">1</td><td>10th</td><td>CBSE Board</td><td>2014</td><td>82%</td></tr><tr><td style="text-align:center;">2</td><td>12th</td><td>CBSE Board</td><td>2016</td><td>95%</td></tr><tr><td style="text-align:center;">3</td><td>B.Com</td><td>Delhi University</td><td>2020</td><td>78%</td></tr>`;
+
+            let sHTML = ""; document.querySelectorAll('.skill-input').forEach(i => { if(i.value) sHTML += `<li style="margin-bottom:4px;">${i.value}</li>`; });
+            document.getElementById('out_skill_body').innerHTML = sHTML || `<li style="margin-bottom:4px;">Basic Knowledge of Computer</li><li style="margin-bottom:4px;">Adv. Microsoft Excel</li>`;
+
+            let eHTML = ""; document.querySelectorAll('.exp-input').forEach(i => { if(i.value) eHTML += `<li style="margin-bottom:4px;">${i.value}</li>`; });
+            document.getElementById('out_exp_body').innerHTML = eHTML || `<li style="margin-bottom:4px;">2 Years Experience as Computer Operator in XYZ Pvt. Ltd Company</li>`;
+
+            ['father','dob','lang','gender','nation','marital'].forEach(id => { document.getElementById('out_'+id).innerText = document.getElementById('f_'+id).value; });
+            switchView('preview');
+        }
+
+        // =====================================================================
+        // SECTION 2: CV COMPILER WITH SLIDER
+        // =====================================================================
+        let loadedCVPagesArray = []; 
+        let isEditingMain = false;
+
+        function openSizeAdjustmentModal(event, type) {
+            const file = event.target.files[0];
+            if(!file) return;
+            isEditingMain = (type === 'main');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('adjImage').src = e.target.result;
+                let defaultScale = isEditingMain ? 100 : 85;
+                document.getElementById('adjSlider').value = defaultScale;
+                updateAdjScale(defaultScale);
+                document.getElementById('adjustmentModal').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ""; 
+        }
+
+        function updateAdjScale(val) {
+            document.getElementById('adjScaleValue').innerText = val + '%';
+            document.getElementById('adjImage').style.width = val + '%';
+        }
+
+        async function confirmAndAttachA4Page() {
+            const btn = document.getElementById('btnAttachOK');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const a4Box = document.getElementById('a4PreviewBox');
+            
+            try {
+                // High-res screenshot of the A4 box
+                const canvas = await html2canvas(a4Box, { scale: 3, backgroundColor: '#ffffff' });
+                const base64Image = canvas.toDataURL('image/jpeg', 0.95);
+
+                if (isEditingMain) {
+                    let mainPage = loadedCVPagesArray.find(p => p.type === 'main');
+                    if (mainPage) mainPage.src = base64Image;
+                    else loadedCVPagesArray.unshift({ id: Date.now(), type: 'main', src: base64Image, label: "Main Resume" });
+                } else {
+                    loadedCVPagesArray.push({ id: Date.now(), type: 'doc', src: base64Image, label: "Attached Document" });
+                }
+                renderCVPagesList();
+            } catch(e) { alert("Error rendering document."); }
+
+            btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> OK & Attach';
+            btn.disabled = false;
+            document.getElementById('adjustmentModal').classList.add('hidden');
+        }
+
+        function renderCVPagesList() {
+            const container = document.getElementById('cvPagesList');
+            if (loadedCVPagesArray.length === 0) {
+                container.innerHTML = '<div class="text-gray-400 text-base font-bold italic w-full text-center mt-6">No pages added yet. Upload documents above.</div>';
+                return;
+            }
+            container.innerHTML = "";
+            loadedCVPagesArray.forEach((page) => {
+                const div = document.createElement('div');
+                div.className = "relative w-32 h-44 border-2 border-gray-300 shadow-sm rounded-xl overflow-hidden bg-white group";
+                div.innerHTML = `
+                    <img src="${page.src}" class="w-full h-full object-cover">
+                    <div class="absolute top-0 left-0 bg-black/80 text-white text-[11px] px-2 py-1.5 w-full text-center font-bold">${page.label}</div>
+                    <button onclick="removeCVPage(${page.id})" class="absolute bottom-2 right-2 bg-red-600 text-white w-8 h-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition flex items-center justify-center hover:bg-red-800"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="absolute inset-0 border-4 border-transparent group-hover:border-blue-500 transition pointer-events-none rounded-xl"></div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function removeCVPage(id) { loadedCVPagesArray = loadedCVPagesArray.filter(p => p.id !== id); renderCVPagesList(); }
+
+        function compileFinalCV() {
+            if(loadedCVPagesArray.length === 0) return alert("Please upload and attach at least one document.");
+            const loader = document.getElementById('loadingOverlay');
+            loader.classList.replace('hidden', 'flex');
+            
+            setTimeout(() => {
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const w = pdf.internal.pageSize.getWidth();
+                    const h = pdf.internal.pageSize.getHeight();
+
+                    for(let i=0; i<loadedCVPagesArray.length; i++) {
+                        if(i > 0) pdf.addPage();
+                        pdf.addImage(loadedCVPagesArray[i].src, 'JPEG', 0, 0, w, h);
+                    }
+                    pdf.save("My_Compiled_CV_Portfolio.pdf");
+                } catch(e) { alert("Error generating PDF."); }
+                loader.classList.replace('flex', 'hidden');
+            }, 500); 
+        }
+
+        // =====================================================================
+        // SECTION 3: 100+ REAL TEMPLATES GALLERY (Actual HTML rendered in Thumbnails)
+        // =====================================================================
+        
+        // 20 Distinct Professional Colors
+        const tplColors = [
+            { c1: "#1e3a8a", c2: "#3b82f6", n: "Navy Blue" }, { c1: "#0f766e", c2: "#14b8a6", n: "Teal" },
+            { c1: "#111827", c2: "#4b5563", n: "Charcoal" }, { c1: "#9f1239", c2: "#f43f5e", n: "Crimson" },
+            { c1: "#14532d", c2: "#22c55e", n: "Forest" }, { c1: "#5b21b6", c2: "#a855f7", n: "Purple" },
+            { c1: "#b45309", c2: "#f59e0b", n: "Amber" }, { c1: "#0369a1", c2: "#0ea5e9", n: "Ocean" },
+            { c1: "#3f3f46", c2: "#71717a", n: "Steel" }, { c1: "#86198f", c2: "#c026d3", n: "Fuchsia" },
+            { c1: "#065f46", c2: "#34d399", n: "Emerald" }, { c1: "#991b1b", c2: "#ef4444", n: "Ruby" },
+            { c1: "#3730a3", c2: "#8b5cf6", n: "Violet" }, { c1: "#075985", c2: "#38bdf8", n: "Sky" },
+            { c1: "#451a03", c2: "#d97706", n: "Bronze" }, { c1: "#022c22", c2: "#4ade80", n: "Mint" },
+            { c1: "#172554", c2: "#60a5fa", n: "Midnight" }, { c1: "#4c1d95", c2: "#a78bfa", n: "Indigo" },
+            { c1: "#7f1d1d", c2: "#f87171", n: "Blood" }, { c1: "#1e293b", c2: "#64748b", n: "Slate" }
+        ];
+        
+        const tplFonts = [
+            "'Segoe UI', sans-serif", "'Montserrat', sans-serif", "'Lato', sans-serif", 
+            "'Playfair Display', serif", "'Oswald', sans-serif", "Georgia, serif"
+        ];
+
+        // Core HTML Generation Function (Returns the exact fully populated resume HTML)
+        function getTemplateHTML(layoutId, color, font) {
+            const dp = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+            const dummyP = "Results-driven professional with over 5 years of experience in managing complex projects, leading diverse teams, and delivering high-quality results. Highly motivated to leverage my skills in a dynamic environment to achieve organizational goals.";
+            
+            // Note: Inline styles are strict for perfect A4 rendering (800x1131px)
+            let html = `<div style="font-family:${font}; width:800px; min-height:1131px; background:#fff; position:relative; box-sizing:border-box;">`;
+
+            if (layoutId === 1) {
+                // Layout 1: Left Dark Sidebar
+                html += `
+                    <div style="display:flex; height:100%; min-height:1131px;">
+                        <div style="width:35%; background:${color.c1}; color:#fff; padding:50px 30px; box-sizing:border-box;">
+                            <img src="${dp}" class="editable-img" onclick="triggerImgSwap(this)" style="width:160px; height:160px; border-radius:50%; border:5px solid #fff; margin:0 auto 30px auto; display:block; object-fit:cover; background:#fff;">
+                            <h2 contenteditable="true" style="font-size:32px; font-weight:900; text-align:center; text-transform:uppercase; margin-bottom:5px; line-height:1.1;">ALEXANDER<br>WRIGHT</h2>
+                            <div contenteditable="true" style="font-size:16px; font-weight:bold; text-align:center; color:${color.c2}; text-transform:uppercase; margin-bottom:50px; letter-spacing:1px;">Senior Manager</div>
+                            
+                            <div style="font-size:20px; font-weight:bold; border-bottom:2px solid rgba(255,255,255,0.3); padding-bottom:5px; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Contact</div>
+                            <div contenteditable="true" style="font-size:14px; margin-bottom:10px; padding-left:5px;">📞 +1 234 567 890</div>
+                            <div contenteditable="true" style="font-size:14px; margin-bottom:10px; padding-left:5px;">✉️ alex.wright@email.com</div>
+                            <div contenteditable="true" style="font-size:14px; margin-bottom:40px; padding-left:5px;">📍 New York, NY 10001</div>
+
+                            <div style="font-size:20px; font-weight:bold; border-bottom:2px solid rgba(255,255,255,0.3); padding-bottom:5px; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Skills</div>
+                            <ul style="font-size:14px; padding-left:20px; margin:0; line-height:1.8;">
+                               <li contenteditable="true">Strategic Planning</li>
+                               <li contenteditable="true">Project Management</li>
+                               <li contenteditable="true">Data Analytics</li>
+                               <li contenteditable="true">Team Leadership</li>
+                               <li contenteditable="true">Digital Marketing</li>
+                            </ul>
+                        </div>
+                        <div style="width:65%; padding:60px 40px; box-sizing:border-box;">
+                            <div style="font-size:24px; font-weight:900; color:${color.c1}; border-bottom:3px solid ${color.c1}; padding-bottom:5px; margin-bottom:20px; text-transform:uppercase;">Profile</div>
+                            <p contenteditable="true" style="font-size:15px; line-height:1.6; color:#334155; margin-bottom:40px; text-align:justify;">${dummyP}</p>
+
+                            <div style="font-size:24px; font-weight:900; color:${color.c1}; border-bottom:3px solid ${color.c1}; padding-bottom:5px; margin-bottom:20px; text-transform:uppercase;">Experience</div>
+                            <div style="margin-bottom:25px;">
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">Marketing Director - Global Corp</div>
+                                <div contenteditable="true" style="font-size:14px; font-weight:bold; color:${color.c2}; margin-bottom:10px;">2020 - Present</div>
+                                <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.6;">
+                                    <li contenteditable="true">Spearheaded international marketing campaigns increasing ROI by 45%.</li>
+                                    <li contenteditable="true">Managed a cross-functional team of 15 marketing specialists.</li>
+                                </ul>
+                            </div>
+                            <div style="margin-bottom:40px;">
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">Marketing Manager - Tech Solutions</div>
+                                <div contenteditable="true" style="font-size:14px; font-weight:bold; color:${color.c2}; margin-bottom:10px;">2016 - 2020</div>
+                                <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.6;">
+                                    <li contenteditable="true">Developed B2B strategies that expanded market share by 20%.</li>
+                                </ul>
+                            </div>
+
+                            <div style="font-size:24px; font-weight:900; color:${color.c1}; border-bottom:3px solid ${color.c1}; padding-bottom:5px; margin-bottom:20px; text-transform:uppercase;">Education</div>
+                            <div style="margin-bottom:15px;">
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">MBA - Business Administration</div>
+                                <div contenteditable="true" style="font-size:14px; color:#64748b;">Harvard Business School (2014 - 2016)</div>
+                            </div>
+                            <div>
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">B.Sc. in Economics</div>
+                                <div contenteditable="true" style="font-size:14px; color:#64748b;">State University (2010 - 2014)</div>
+                            </div>
+                        </div>
+                    </div>`;
+            } 
+            else if (layoutId === 2) {
+                // Layout 2: Modern Top Header
+                html += `
+                    <div style="background:${color.c1}; padding:50px; color:#fff; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <h1 contenteditable="true" style="font-size:46px; font-weight:900; margin:0; line-height:1; letter-spacing:2px; text-transform:uppercase;">EMILY<br>CHEN</h1>
+                            <div contenteditable="true" style="font-size:18px; color:${color.c2}; font-weight:bold; margin-top:10px; letter-spacing:1px; text-transform:uppercase;">Creative Art Director</div>
+                        </div>
+                        <img src="${dp}" class="editable-img" onclick="triggerImgSwap(this)" style="width:150px; height:150px; object-fit:cover; border:4px solid #fff; border-radius:10px; background:#fff;">
+                    </div>
+                    <div style="background:${color.c2}; padding:15px 50px; color:#fff; display:flex; justify-content:space-between; font-size:13px; font-weight:bold;">
+                        <span contenteditable="true">📞 +44 20 7123 4567</span>
+                        <span contenteditable="true">✉️ emily.chen@design.com</span>
+                        <span contenteditable="true">📍 London, UK</span>
+                    </div>
+                    <div style="padding:50px; display:flex; gap:40px;">
+                        <div style="width:60%;">
+                            <div style="font-size:22px; font-weight:bold; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Summary</div>
+                            <p contenteditable="true" style="font-size:14px; line-height:1.6; color:#475569; margin-bottom:40px;">${dummyP}</p>
+                            
+                            <div style="font-size:22px; font-weight:bold; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Work Experience</div>
+                            <div style="margin-bottom:25px;">
+                                <div contenteditable="true" style="font-size:16px; font-weight:bold; color:#1e293b;">Art Director | Studio Alpha</div>
+                                <div contenteditable="true" style="font-size:13px; font-weight:bold; color:${color.c2}; margin-bottom:5px;">2021 - Present</div>
+                                <p contenteditable="true" style="font-size:13px; color:#475569; line-height:1.5;">Directed rebranding projects for Fortune 500 companies. Over 50+ successful launches.</p>
+                            </div>
+                            <div style="margin-bottom:25px;">
+                                <div contenteditable="true" style="font-size:16px; font-weight:bold; color:#1e293b;">Senior Designer | Pixel Perfect</div>
+                                <div contenteditable="true" style="font-size:13px; font-weight:bold; color:${color.c2}; margin-bottom:5px;">2017 - 2021</div>
+                                <p contenteditable="true" style="font-size:13px; color:#475569; line-height:1.5;">Lead UI/UX designer for flagship mobile applications.</p>
+                            </div>
+                        </div>
+                        <div style="width:40%;">
+                            <div style="font-size:22px; font-weight:bold; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Education</div>
+                            <div style="margin-bottom:30px;">
+                                <div contenteditable="true" style="font-size:15px; font-weight:bold; color:#1e293b;">BFA in Graphic Design</div>
+                                <div contenteditable="true" style="font-size:13px; color:#64748b;">University of Arts, London</div>
+                                <div contenteditable="true" style="font-size:13px; color:#64748b;">2013 - 2017</div>
+                            </div>
+                            
+                            <div style="font-size:22px; font-weight:bold; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Expertise</div>
+                            <ul style="font-size:14px; padding-left:15px; color:#475569; line-height:1.8;">
+                               <li contenteditable="true">Brand Identity</li><li contenteditable="true">Typography</li><li contenteditable="true">UI/UX Prototyping</li><li contenteditable="true">Adobe Creative Suite</li>
+                            </ul>
+                        </div>
+                    </div>`;
+            }
+            else if (layoutId === 3) {
+                // Layout 3: Right Sidebar Vibrant
+                html += `
+                    <div style="display:flex; min-height:1131px; flex-direction:row-reverse;">
+                        <div style="width:30%; background:${color.c1}; color:#fff; padding:50px 25px; box-sizing:border-box;">
+                            <div style="font-size:20px; font-weight:bold; border-bottom:1px solid ${color.c2}; padding-bottom:5px; margin-bottom:15px; text-transform:uppercase;">Details</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:10px;">123 Business Avenue<br>Seattle, WA 98101</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:10px;">(555) 987-6543</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:40px;">david.p@email.com</div>
+                            
+                            <div style="font-size:20px; font-weight:bold; border-bottom:1px solid ${color.c2}; padding-bottom:5px; margin-bottom:15px; text-transform:uppercase;">Core Skills</div>
+                            <ul style="font-size:13px; padding-left:15px; line-height:1.8; margin-bottom:40px;">
+                               <li contenteditable="true">Python / Django</li><li contenteditable="true">React / Next.js</li><li contenteditable="true">Cloud Architecture (AWS)</li><li contenteditable="true">Agile Methodologies</li>
+                            </ul>
+
+                            <div style="font-size:20px; font-weight:bold; border-bottom:1px solid ${color.c2}; padding-bottom:5px; margin-bottom:15px; text-transform:uppercase;">Languages</div>
+                            <ul style="font-size:13px; padding-left:15px; line-height:1.8;">
+                               <li contenteditable="true">English (Native)</li><li contenteditable="true">Spanish (Fluent)</li>
+                            </ul>
+                        </div>
+                        <div style="width:70%; padding:60px 40px; box-sizing:border-box;">
+                            <h1 contenteditable="true" style="font-size:48px; font-weight:900; color:${color.c1}; margin:0; line-height:1; text-transform:uppercase;">DAVID<br>PATEL</h1>
+                            <div contenteditable="true" style="font-size:18px; color:${color.c2}; font-weight:bold; margin-top:10px; margin-bottom:30px; letter-spacing:2px; text-transform:uppercase;">Full Stack Developer</div>
+                            
+                            <img src="${dp}" class="editable-img" onclick="triggerImgSwap(this)" style="width:120px; height:120px; object-fit:cover; border-radius:15px; margin-bottom:30px; border:2px solid ${color.c1};">
+                            
+                            <div style="font-size:22px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase;">Professional Summary</div>
+                            <p contenteditable="true" style="font-size:14px; line-height:1.6; color:#475569; margin-bottom:40px;">${dummyP}</p>
+
+                            <div style="font-size:22px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase;">Work History</div>
+                            <div style="margin-bottom:25px;">
+                                <div contenteditable="true" style="font-size:16px; font-weight:bold; color:#1e293b;">Lead Developer - TechFlow Inc.</div>
+                                <div contenteditable="true" style="font-size:13px; font-weight:bold; color:${color.c2}; margin-bottom:10px;">2020 - Present</div>
+                                <p contenteditable="true" style="font-size:14px; line-height:1.5; color:#475569;">Architected scalable microservices. Reduced server load by 30% through code optimization.</p>
+                            </div>
+                            
+                            <div style="font-size:22px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase;">Education</div>
+                            <div contenteditable="true" style="font-size:16px; font-weight:bold; color:#1e293b;">B.S. Computer Science</div>
+                            <div contenteditable="true" style="font-size:14px; color:#475569;">Tech University | Graduated 2018</div>
+                        </div>
+                    </div>`;
+            }
+            else if (layoutId === 4) {
+                // Layout 4: Bordered Executive
+                html += `
+                    <div style="padding:30px; box-sizing:border-box; min-height:1131px; display:flex; flex-direction:column;">
+                        <div style="border:6px solid ${color.c1}; padding:40px; flex-grow:1;">
+                            <div style="background:${color.c1}; color:#fff; padding:30px; text-align:center; margin:-40px -40px 30px -40px;">
+                                <h1 contenteditable="true" style="font-size:42px; font-weight:900; margin:0; letter-spacing:4px; text-transform:uppercase;">MICHAEL SCOTT</h1>
+                                <div contenteditable="true" style="font-size:16px; margin-top:10px; font-weight:bold; letter-spacing:2px; color:${color.c2};">REGIONAL MANAGER</div>
+                            </div>
+                            
+                            <div style="display:flex; gap:40px; justify-content:center; text-align:center; font-size:13px; font-weight:bold; color:#475569; margin-bottom:40px; border-bottom:2px solid #e2e8f0; padding-bottom:20px;">
+                                <span contenteditable="true">Scranton, PA 18501</span>
+                                <span contenteditable="true">|</span>
+                                <span contenteditable="true">(555) 012-3456</span>
+                                <span contenteditable="true">|</span>
+                                <span contenteditable="true">m.scott@paper.com</span>
+                            </div>
+
+                            <div style="display:flex; gap:40px;">
+                                <div style="width:70%;">
+                                    <div style="font-size:20px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Summary</div>
+                                    <p contenteditable="true" style="font-size:14px; line-height:1.6; color:#334155; margin-bottom:40px;">${dummyP}</p>
+                                    
+                                    <div style="font-size:20px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Experience</div>
+                                    <div style="margin-bottom:25px;">
+                                        <div contenteditable="true" style="font-size:16px; font-weight:bold;">Regional Manager | Dunder Mifflin</div>
+                                        <div contenteditable="true" style="font-size:13px; font-style:italic; color:#64748b; margin-bottom:8px;">2010 - Present</div>
+                                        <ul style="font-size:14px; color:#334155; padding-left:15px; line-height:1.5;">
+                                            <li contenteditable="true">Managed branch operations generating $2M annually.</li>
+                                            <li contenteditable="true">Consistently awarded branch of the year for highest sales.</li>
+                                        </ul>
+                                    </div>
+                                    <div style="margin-bottom:25px;">
+                                        <div contenteditable="true" style="font-size:16px; font-weight:bold;">Sales Representative | Dunder Mifflin</div>
+                                        <div contenteditable="true" style="font-size:13px; font-style:italic; color:#64748b; margin-bottom:8px;">2005 - 2010</div>
+                                        <ul style="font-size:14px; color:#334155; padding-left:15px; line-height:1.5;">
+                                            <li contenteditable="true">Top salesman in the Northeast region for 3 consecutive years.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div style="width:30%;">
+                                    <img src="${dp}" class="editable-img" onclick="triggerImgSwap(this)" style="width:100%; border:3px solid ${color.c1}; object-fit:cover; margin-bottom:30px;">
+                                    
+                                    <div style="font-size:20px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Education</div>
+                                    <div style="margin-bottom:30px;">
+                                        <div contenteditable="true" style="font-size:14px; font-weight:bold;">B.A. Business</div>
+                                        <div contenteditable="true" style="font-size:12px; color:#64748b;">State College (2000-2004)</div>
+                                    </div>
+
+                                    <div style="font-size:20px; font-weight:900; color:${color.c1}; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Skills</div>
+                                    <ul style="font-size:14px; color:#334155; padding-left:15px; line-height:1.6;">
+                                        <li contenteditable="true">Sales Strategy</li><li contenteditable="true">Leadership</li><li contenteditable="true">Client Relations</li><li contenteditable="true">Conflict Resolution</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            else {
+                // Layout 5: Minimal Two-Column Split
+                html += `
+                    <div style="display:flex; min-height:1131px;">
+                        <div style="width:40%; padding:60px 40px; box-sizing:border-box; background:#f8fafc;">
+                            <img src="${dp}" class="editable-img" onclick="triggerImgSwap(this)" style="width:180px; height:180px; object-fit:cover; border-radius:15px; margin-bottom:30px; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
+                            
+                            <div style="font-size:16px; font-weight:900; color:${color.c1}; text-transform:uppercase; margin-bottom:10px; letter-spacing:1px;">Contact</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:8px; color:#475569;">📍 789 Tech Boulevard</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:8px; color:#475569;">📞 (555) 111-2222</div>
+                            <div contenteditable="true" style="font-size:13px; margin-bottom:40px; color:#475569;">✉️ hello@designer.com</div>
+                            
+                            <div style="font-size:16px; font-weight:900; color:${color.c1}; text-transform:uppercase; margin-bottom:10px; letter-spacing:1px;">Education</div>
+                            <div contenteditable="true" style="font-size:14px; font-weight:bold; color:#1e293b;">M.S. in Design</div>
+                            <div contenteditable="true" style="font-size:12px; color:#64748b; margin-bottom:20px;">Creative Institute (2015-2017)</div>
+                            <div contenteditable="true" style="font-size:14px; font-weight:bold; color:#1e293b;">B.A. Fine Arts</div>
+                            <div contenteditable="true" style="font-size:12px; color:#64748b; margin-bottom:40px;">State University (2011-2015)</div>
+                            
+                            <div style="font-size:16px; font-weight:900; color:${color.c1}; text-transform:uppercase; margin-bottom:10px; letter-spacing:1px;">Expertise</div>
+                            <div contenteditable="true" style="font-size:13px; color:#475569; margin-bottom:5px;">• Brand Strategy</div>
+                            <div contenteditable="true" style="font-size:13px; color:#475569; margin-bottom:5px;">• Visual Design</div>
+                            <div contenteditable="true" style="font-size:13px; color:#475569; margin-bottom:5px;">• Web Typography</div>
+                        </div>
+                        <div style="width:60%; padding:60px 50px; box-sizing:border-box;">
+                            <h1 contenteditable="true" style="font-size:54px; font-weight:900; color:${color.c1}; margin:0; line-height:1.1; text-transform:uppercase;">OLIVIA<br>MARTIN</h1>
+                            <div contenteditable="true" style="font-size:20px; font-weight:bold; color:${color.c2}; margin-top:10px; margin-bottom:40px; letter-spacing:1px; text-transform:uppercase;">Lead Visual Designer</div>
+                            
+                            <div style="font-size:22px; font-weight:900; color:${color.c1}; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:5px; text-transform:uppercase;">About Me</div>
+                            <p contenteditable="true" style="font-size:14px; line-height:1.7; color:#334155; margin-bottom:40px; text-align:justify;">${dummyP}</p>
+                            
+                            <div style="font-size:22px; font-weight:900; color:${color.c1}; margin-bottom:15px; border-bottom:2px solid #e2e8f0; padding-bottom:5px; text-transform:uppercase;">Experience</div>
+                            <div style="margin-bottom:30px;">
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">Lead Designer | Creative Agency</div>
+                                <div contenteditable="true" style="font-size:13px; font-weight:bold; color:${color.c2}; margin-bottom:10px;">2019 - Present</div>
+                                <p contenteditable="true" style="font-size:14px; line-height:1.6; color:#475569;">Spearheaded digital campaigns for high-profile clients resulting in 30% user base growth.</p>
+                            </div>
+                            <div style="margin-bottom:30px;">
+                                <div contenteditable="true" style="font-size:18px; font-weight:bold; color:#1e293b;">Graphic Designer | Print House</div>
+                                <div contenteditable="true" style="font-size:13px; font-weight:bold; color:${color.c2}; margin-bottom:10px;">2017 - 2019</div>
+                                <p contenteditable="true" style="font-size:14px; line-height:1.6; color:#475569;">Designed compelling print and digital media for B2B communications.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        // =====================================================================
+        // SECTION 5: GALLERY RENDERING LOOP (100+ Unique Thumbnails)
+        // =====================================================================
+        function autoSpawnFiftyTemplatesGallery() {
+            const container = document.getElementById('massiveTemplateGridContainer');
+            container.innerHTML = "";
+
+            let totalTemplates = 120; // Generating 120 templates
+
+            for(let i=1; i<=totalTemplates; i++) {
+                let layoutPick = (i % 5) + 1; // Cycles 1 to 5
+                let colorPick = tplColors[(i - 1) % tplColors.length]; // Cycles 20 colors
+                let fontPick = tplFonts[(i - 1) % tplFonts.length]; // Cycles 6 fonts
+                
+                // Get the actual HTML to render as a tiny thumbnail
+                let rawHTML = getTemplateHTML(layoutPick, colorPick, fontPick);
+
+                const cell = document.createElement('div');
+                cell.className = "template-thumb-wrapper";
+                cell.onclick = () => {
+                    document.getElementById('editableA4CanvasFrame').innerHTML = getTemplateHTML(layoutPick, colorPick, fontPick);
+                    switchView('editor');
+                };
+
+                // The scale trick: CSS scales down the 800x1131 box to fit perfectly in the grid cell
+                // 18% (0.18) scale fits perfectly inside a typical grid cell
+                cell.innerHTML = `
+                    <div class="template-thumb-scaler" style="transform: scale(0.24);">
+                        ${rawHTML}
+                    </div>
+                    <div class="absolute inset-0 bg-black/0 hover:bg-black/30 transition flex flex-col items-center justify-center opacity-0 hover:opacity-100">
+                        <button class="bg-white text-emerald-600 font-black px-5 py-2.5 rounded-full shadow-xl transform transition hover:scale-105 mb-2"><i class="fa-solid fa-pen-to-square"></i> Edit Resume</button>
+                        <span class="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded">Theme ${i} - ${colorPick.n}</span>
+                    </div>
+                `;
+                container.appendChild(cell);
+            }
+        }
+
+        // --- Live Editor Image Swap ---
+        let activeImgNode = null;
+        function triggerImgSwap(node) {
+            activeImgNode = node;
+            document.getElementById('templateHiddenInputFilePicker').click();
+        }
+        function handleLiveTemplateImageSwap(e) {
+            const file = e.target.files[0];
+            if(file && activeImgNode) {
+                const r = new FileReader();
+                r.onload = function(evt) { activeImgNode.src = evt.target.result; };
+                r.readAsDataURL(file);
+            }
+            e.target.value = "";
+        }
+
+        // --- Export to PDF (Live Editor) ---
+        async function executeA4PDFExport(elementId, outputFileName) {
+            const node = document.getElementById(elementId);
+            const loader = document.getElementById('loadingOverlay'); 
+            loader.classList.replace('hidden', 'flex');
+
+            try {
+                // Remove dashed borders temporarily
+                const editableElements = node.querySelectorAll('[contenteditable="true"]');
+                editableElements.forEach(el => el.style.border = 'none');
+                
+                const canvasElement = await html2canvas(node, { scale: 3, useCORS: true, backgroundColor: "#ffffff" });
+                const base64JPEG = canvasElement.toDataURL('image/jpeg', 0.95);
+                
+                // Restore borders
+                editableElements.forEach(el => el.style.border = '');
+
+                const { jsPDF } = window.jspdf;
+                const pdfInstance = new jsPDF('p', 'mm', 'a4');
+                const pW = pdfInstance.internal.pageSize.getWidth();
+                const pH = (canvasElement.height * pW) / canvasElement.width;
+
+                pdfInstance.addImage(base64JPEG, 'JPEG', 0, 0, pW, pH);
+                pdfInstance.save(`${outputFileName}.pdf`);
+            } catch(err) { alert("PDF Error"); }
+            finally { loader.classList.replace('flex', 'hidden'); }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => { autoSpawnFiftyTemplatesGallery(); });
+    </script>
+</body>
+</html>

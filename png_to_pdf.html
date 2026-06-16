@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PdfCraft Free | PNG to PDF Converter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- SortableJS for Drag & Drop Reordering -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- JSZip for downloading multiple PDFs if requested -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Drag & Drop Zone */
+        .dropzone-active { border-color: #f59e0b !important; background-color: #fffbeb !important; transform: scale(1.02); }
+        
+        /* Thumbnails Styling & Transparency Checkerboard */
+        .transparent-bg {
+            background-image: 
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: white;
+        }
+
+        .image-card { transition: all 0.2s ease-in-out; }
+        .image-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-color: #f59e0b; }
+        .image-card.sortable-ghost { opacity: 0.4; }
+        .image-card.sortable-drag { cursor: grabbing !important; }
+
+        .action-overlay { opacity: 0; transition: all 0.2s; backdrop-filter: blur(2px); }
+        .image-card:hover .action-overlay { opacity: 1; }
+        .action-btn-hover { transform: translateY(10px); transition: all 0.2s; }
+        .image-card:hover .action-btn-hover { transform: translateY(0); }
+
+        /* UI Controls */
+        .radio-btn-group input[type="radio"]:checked + label { background-color: #f59e0b; color: white; border-color: #f59e0b; }
+        .panel-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 13px; outline: none; transition: 0.2s; color: #334155; font-weight: 600; }
+        .panel-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
+
+        /* Animations */
+        @keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-entry { animation: fadeInScale 0.4s ease-out forwards; }
+        .progress-bar-fill { transition: width 0.3s ease; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- 1. NAVIGATION BAR -->
+    <header class="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-50 sticky top-0 shadow-sm">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-slate-500 hover:text-amber-600 hover:bg-amber-50 px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm border border-transparent hover:border-amber-100">
+                <i class="fa-solid fa-arrow-left"></i> Dashboard
+            </a>
+            <div class="h-6 w-px bg-gray-200"></div>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center text-lg shadow-sm">
+                    <i class="fa-regular fa-file-image"></i>
+                </div>
+                <h1 class="text-lg font-heading font-extrabold text-gray-800 tracking-tight">PdfCraft <span class="text-amber-500">Free</span></h1>
+                <span class="text-[9px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full uppercase tracking-wider ml-2 border border-blue-200">100% Free & Unlimited</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="group relative cursor-help flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+                <i class="fa-solid fa-circle-info text-amber-500"></i> Format Info
+                <div class="absolute hidden group-hover:block top-full right-0 mt-2 bg-slate-800 text-white text-xs px-3 py-2 rounded whitespace-nowrap shadow-lg z-50">Optimized for PNG and Transparent Images</div>
+            </div>
+            <button onclick="resetApp()" class="text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 hover:border-red-200 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-trash-can"></i> Clear Canvas
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. HERO DRAG-AND-DROP ZONE (Initial View) -->
+    <div id="heroUploadView" class="flex-grow flex flex-col items-center justify-center p-8 transition-all duration-500">
+        <div class="text-center max-w-2xl mb-10">
+            <h2 class="text-4xl md:text-5xl font-heading font-extrabold text-gray-900 mb-4 tracking-tight">Convert PNG to <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">PDF Instantly</span></h2>
+            <p class="text-gray-500 text-lg font-medium">No registration required. Maintain lossless PNG quality, arrange pages, and generate your PDF in seconds.</p>
+        </div>
+
+        <div id="mainDropzone" class="w-full max-w-4xl bg-white border-4 border-dashed border-gray-300 rounded-3xl p-16 flex flex-col items-center justify-center text-center cursor-pointer hover:border-amber-500 hover:bg-amber-50 transition-all duration-300 shadow-sm" onclick="document.getElementById('fileInput').click()">
+            <div class="w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner pointer-events-none">
+                <i class="fa-regular fa-images"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2 pointer-events-none">Choose PNG Files / Drag & Drop Images</h3>
+            <p class="text-gray-500 font-medium pointer-events-none">Accepts multiple .png files. Transparency is fully supported.</p>
+            
+            <button class="mt-8 bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-xl font-bold text-sm transition shadow-lg pointer-events-none flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> Browse Files
+            </button>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".png" class="hidden" onchange="handleFiles(event)">
+    </div>
+
+    <!-- 3. MAIN WORKSPACE / THE INTERACTIVE PNG GRID -->
+    <div id="workspaceView" class="hidden flex-grow flex overflow-hidden bg-slate-50">
+        
+        <!-- 3A. MAIN VIEW: Grid Canvas -->
+        <div class="flex-grow flex flex-col relative overflow-hidden">
+            <div class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+                <h2 class="font-bold text-gray-800 flex items-center gap-2 text-lg">
+                    <i class="fa-regular fa-image text-amber-500"></i> PNG Gallery (<span id="imgCountBadge">0</span>)
+                </h2>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1 rounded-full"><i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Drag thumbnails to reorder</span>
+                    <button onclick="document.getElementById('fileInput').click()" class="bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Add More PNGs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image Grid Container -->
+            <div class="flex-grow overflow-y-auto p-6 bg-slate-50/50" id="scrollContainer">
+                <div id="imageGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-20">
+                    <!-- Image Cards injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3B. SIDEBAR PANEL: Global Layout & Transparency Controls -->
+        <aside class="w-[340px] bg-white border-l border-gray-200 flex flex-col shrink-0 z-30 shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-gray-100 bg-gray-50 shrink-0">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest"><i class="fa-solid fa-sliders text-amber-500 mr-2"></i> PDF Layout Settings</h2>
+            </div>
+
+            <div class="flex-grow overflow-y-auto p-5 space-y-6">
+                
+                <!-- Transparency Handler -->
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">1. Transparency Handler</label>
+                    <select id="transparencyMode" class="panel-input cursor-pointer bg-white mb-2" onchange="toggleCustomColorInput()">
+                        <option value="white">Match Canvas (Solid White)</option>
+                        <option value="custom">Custom Fill Color...</option>
+                    </select>
+                    <div id="customColorBox" class="hidden flex items-center gap-2 mt-2">
+                        <input type="color" id="customBgColor" value="#000000" class="w-8 h-8 rounded border-0 cursor-pointer p-0">
+                        <span class="text-xs font-semibold text-gray-500">Select replacement background color</span>
+                    </div>
+                </div>
+
+                <!-- Page Size -->
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">2. Page Size Selector</label>
+                    <select id="setPageSize" class="panel-input cursor-pointer bg-white">
+                        <option value="auto">Auto-Fit (Exact Image Size)</option>
+                        <option value="a4">A4 Standard Paper</option>
+                        <option value="letter">US Letter Paper</option>
+                    </select>
+                </div>
+
+                <!-- Page Margins -->
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">3. Page Margins</label>
+                    <div class="grid grid-cols-2 gap-2 radio-btn-group">
+                        <div class="relative">
+                            <input type="radio" name="setMargin" id="margNone" value="0" class="hidden" checked>
+                            <label for="margNone" class="flex flex-col items-center justify-center border border-gray-200 rounded-lg py-2 cursor-pointer hover:bg-gray-50 transition text-gray-600 font-bold text-xs">
+                                Zero Margin
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="radio" name="setMargin" id="margClean" value="15" class="hidden">
+                            <label for="margClean" class="flex flex-col items-center justify-center border border-gray-200 rounded-lg py-2 cursor-pointer hover:bg-gray-50 transition text-gray-600 font-bold text-xs">
+                                Clean Margin
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orientation -->
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">4. Orientation Mode</label>
+                    <div class="grid grid-cols-2 gap-2 radio-btn-group">
+                        <div class="relative">
+                            <input type="radio" name="setOrientation" id="oriPortrait" value="portrait" class="hidden" checked>
+                            <label for="oriPortrait" class="flex flex-col items-center justify-center border border-gray-200 rounded-xl p-3 cursor-pointer hover:bg-gray-50 transition text-gray-600 font-semibold text-xs">
+                                <i class="fa-regular fa-file-lines text-lg mb-1 text-gray-400"></i> Portrait
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="radio" name="setOrientation" id="oriLandscape" value="landscape" class="hidden">
+                            <label for="oriLandscape" class="flex flex-col items-center justify-center border border-gray-200 rounded-xl p-3 cursor-pointer hover:bg-gray-50 transition text-gray-600 font-semibold text-xs">
+                                <i class="fa-regular fa-file-lines text-lg mb-1 text-gray-400 transform -rotate-90"></i> Landscape
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. OUTPUT OPTIONS -->
+                <div class="border-t border-gray-200 pt-5 space-y-4">
+                    <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Output Configuration</h3>
+                    
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <div class="relative flex items-center justify-center w-5 h-5 mt-0.5">
+                            <input type="checkbox" id="setMerge" checked class="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded checked:bg-amber-500 checked:border-amber-500 transition cursor-pointer">
+                            <i class="fa-solid fa-check absolute text-white text-[10px] opacity-0 peer-checked:opacity-100 pointer-events-none"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-gray-700 group-hover:text-amber-600 transition">Merge into One PDF File</span>
+                            <span class="text-[10px] text-gray-500 font-medium">Turn off to download as separate PDFs.</span>
+                        </div>
+                    </label>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 mb-1 block">Custom PDF Filename</label>
+                        <input type="text" id="setFileName" placeholder="png_to_document" value="png_to_document" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-semibold outline-none focus:border-amber-500 transition bg-gray-50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. FINISHING ACTION SECTION -->
+            <div class="p-5 bg-white border-t border-gray-200 shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] relative">
+                
+                <!-- Progress Overlay -->
+                <div id="progressOverlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 hidden flex-col items-center justify-center p-5 text-center">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-amber-500 mb-3"></i>
+                    <p id="progressText" class="text-sm font-bold text-gray-800 mb-3">Compiling Page 1...</p>
+                    <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 progress-bar-fill w-0"></div>
+                    </div>
+                </div>
+
+                <button onclick="generatePDF()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> GENERATE & DOWNLOAD
+                </button>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // --- State Management ---
+        let imagesData = []; 
+        /* { id, fileDataUrl, name, rotation: 0 } */
+        let sortableInstance = null;
+
+        // --- 2. File Upload & Drag-Drop Zone ---
+        const dropzone = document.getElementById('mainDropzone');
+        const heroView = document.getElementById('heroUploadView');
+        const workspaceView = document.getElementById('workspaceView');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+        ['dragenter', 'dragover'].forEach(eventName => { dropzone.addEventListener(eventName, () => dropzone.classList.add('dropzone-active'), false); });
+        ['dragleave', 'drop'].forEach(eventName => { dropzone.addEventListener(eventName, () => dropzone.classList.remove('dropzone-active'), false); });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            handleFiles({ target: { files: dt.files } });
+        });
+
+        function handleFiles(e) {
+            const files = e.target.files;
+            if(!files || files.length === 0) return;
+
+            // Strict PNG validation for this specific tool requirement
+            let validFiles = Array.from(files).filter(f => f.type === 'image/png');
+            if(validFiles.length === 0) {
+                alert("Please upload valid PNG (.png) files.");
+                return;
+            }
+
+            heroView.classList.add('hidden');
+            workspaceView.classList.remove('hidden');
+            workspaceView.classList.add('flex');
+
+            let processedCount = 0;
+            validFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const id = 'img_' + Date.now() + Math.random().toString(36).substr(2, 5);
+                    imagesData.push({
+                        id: id,
+                        fileDataUrl: event.target.result,
+                        name: file.name,
+                        rotation: 0
+                    });
+                    processedCount++;
+                    if(processedCount === validFiles.length) {
+                        renderImageGrid();
+                        initSortable();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            document.getElementById('fileInput').value = '';
+        }
+
+        function resetApp() {
+            if(imagesData.length > 0 && !confirm("Clear all PNG images and restart?")) return;
+            imagesData = [];
+            document.getElementById('heroUploadView').classList.remove('hidden');
+            document.getElementById('workspaceView').classList.add('hidden');
+            document.getElementById('workspaceView').classList.remove('flex');
+            document.getElementById('fileInput').value = '';
+        }
+
+        // --- 3. Grid Rendering & Sorting ---
+        function renderImageGrid() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            document.getElementById('imgCountBadge').innerText = imagesData.length;
+
+            if(imagesData.length === 0) {
+                resetApp();
+                return;
+            }
+
+            imagesData.forEach((imgObj, index) => {
+                const card = document.createElement('div');
+                card.className = "image-card bg-white border border-gray-200 rounded-2xl p-2 relative group cursor-grab flex flex-col animate-entry";
+                card.style.animationDelay = `${(index * 0.05).toFixed(2)}s`;
+                card.setAttribute('data-id', imgObj.id);
+
+                // Badge Page Number
+                const badge = document.createElement('div');
+                badge.className = "absolute -top-3 -left-3 bg-gray-900 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-lg border-2 border-white z-10 page-badge";
+                badge.innerText = `Pg ${index + 1}`;
+                card.appendChild(badge);
+
+                // Image Container with Checkerboard background for transparency preview
+                const imgContainer = document.createElement('div');
+                imgContainer.className = "w-full aspect-square transparent-bg rounded-xl overflow-hidden relative flex items-center justify-center border border-gray-100";
+                
+                imgContainer.innerHTML = `
+                    <img src="${imgObj.fileDataUrl}" class="max-w-full max-h-full object-contain transition-transform duration-300" style="transform: rotate(${imgObj.rotation}deg);">
+                    
+                    <!-- Hover Action Overlay -->
+                    <div class="action-overlay absolute inset-0 bg-slate-900/60 flex items-center justify-center gap-4">
+                        <button onclick="rotateImage('${imgObj.id}', event)" class="action-btn-hover bg-white/20 hover:bg-white text-white hover:text-amber-600 w-10 h-10 rounded-full flex items-center justify-center transition border border-white/40" title="Rotate">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                        <button onclick="deleteImage('${imgObj.id}', event)" class="action-btn-hover bg-white/20 hover:bg-white text-white hover:text-red-600 w-10 h-10 rounded-full flex items-center justify-center transition border border-white/40" style="transition-delay: 50ms;" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+
+                // Footer Name
+                const footer = document.createElement('div');
+                footer.className = "mt-3 px-1 text-center truncate text-[11px] font-semibold text-gray-500 uppercase tracking-wider";
+                footer.innerText = imgObj.name;
+
+                card.appendChild(imgContainer);
+                card.appendChild(footer);
+                grid.appendChild(card);
+            });
+        }
+
+        function initSortable() {
+            const grid = document.getElementById('imageGrid');
+            if(sortableInstance) sortableInstance.destroy();
+            
+            sortableInstance = new Sortable(grid, {
+                animation: 250,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function (evt) {
+                    const newOrderIds = Array.from(grid.children).map(child => child.getAttribute('data-id'));
+                    const newImagesData = newOrderIds.map(id => imagesData.find(img => img.id === id));
+                    imagesData = newImagesData;
+                    
+                    Array.from(grid.children).forEach((child, index) => {
+                        child.querySelector('.page-badge').innerText = `Pg ${index + 1}`;
+                    });
+                }
+            });
+        }
+
+        // --- Image Controls ---
+        function rotateImage(id, e) {
+            e.stopPropagation();
+            const img = imagesData.find(i => i.id === id);
+            if(img) {
+                img.rotation = (img.rotation + 90) % 360;
+                renderImageGrid();
+            }
+        }
+
+        function deleteImage(id, e) {
+            e.stopPropagation();
+            imagesData = imagesData.filter(i => i.id !== id);
+            renderImageGrid();
+        }
+
+        function toggleCustomColorInput() {
+            const mode = document.getElementById('transparencyMode').value;
+            const box = document.getElementById('customColorBox');
+            if(mode === 'custom') {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        // --- 5. GENERATE PDF (jsPDF) ---
+        async function generatePDF() {
+            if(imagesData.length === 0) return alert("No images to convert.");
+
+            const pageSize = document.getElementById('setPageSize').value; // auto, a4, letter
+            const isLandscape = document.getElementById('oriLandscape').checked;
+            const marginOpt = parseInt(document.querySelector('input[name="setMargin"]:checked').value);
+            const transMode = document.getElementById('transparencyMode').value;
+            const customBgColor = document.getElementById('customBgColor').value;
+            
+            const doMerge = document.getElementById('setMerge').checked;
+            let fileName = document.getElementById('setFileName').value.trim();
+            if(!fileName) fileName = "png_to_document";
+
+            // Show Progress UI
+            const overlay = document.getElementById('progressOverlay');
+            const pText = document.getElementById('progressText');
+            const pBar = document.getElementById('progressBar');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            
+            const { jsPDF } = window.jspdf;
+            const zip = new JSZip(); // In case Merge is false
+            
+            try {
+                let doc = null;
+                
+                // Helper to process PNG onto a canvas to apply background color/margin/rotation safely
+                const processImage = async (imgObj) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            
+                            let w = img.width; let h = img.height;
+                            let finalW = w; let finalH = h;
+                            if(imgObj.rotation === 90 || imgObj.rotation === 270) { finalW = h; finalH = w; }
+                            
+                            canvas.width = finalW; canvas.height = finalH;
+                            
+                            // Apply background for transparency handling
+                            ctx.fillStyle = transMode === 'white' ? '#ffffff' : customBgColor;
+                            ctx.fillRect(0, 0, finalW, finalH);
+
+                            ctx.translate(finalW/2, finalH/2);
+                            ctx.rotate(imgObj.rotation * Math.PI / 180);
+                            ctx.drawImage(img, -w/2, -h/2, w, h);
+                            
+                            // We use high quality JPEG for PDF embedding to save space, but visually lossless
+                            resolve({ dataUrl: canvas.toDataURL('image/jpeg', 1.0), w: finalW, h: finalH });
+                        };
+                        img.src = imgObj.fileDataUrl;
+                    });
+                };
+
+                for(let i=0; i<imagesData.length; i++) {
+                    pText.innerText = `Compiling Page ${i+1}/${imagesData.length}...`;
+                    pBar.style.width = `${((i)/imagesData.length)*100}%`;
+                    
+                    const processed = await processImage(imagesData[i]);
+                    
+                    let pdfW, pdfH, format;
+                    if(pageSize === 'auto') {
+                        // Fit to image exactly (plus margins)
+                        pdfW = processed.w + (marginOpt*2);
+                        pdfH = processed.h + (marginOpt*2);
+                        format = [pdfW, pdfH];
+                    } else {
+                        // Standard formats (px mapping equivalent approx)
+                        if(pageSize === 'a4') { format = 'a4'; pdfW = isLandscape ? 842 : 595; pdfH = isLandscape ? 595 : 842; } // Using standard pt sizes
+                        else if(pageSize === 'letter') { format = 'letter'; pdfW = isLandscape ? 792 : 612; pdfH = isLandscape ? 612 : 792; } 
+                    }
+
+                    const orientation = (pdfW > pdfH || isLandscape) ? 'l' : 'p';
+                    
+                    if(doMerge) {
+                        if(i === 0) doc = new jsPDF({ orientation: orientation, unit: 'px', format: pageSize==='auto' ? format : pageSize });
+                        else doc.addPage(pageSize==='auto' ? format : pageSize, orientation);
+                    } else {
+                        doc = new jsPDF({ orientation: orientation, unit: 'px', format: pageSize==='auto' ? format : pageSize });
+                    }
+
+                    // Fill document background color to match transparency setting
+                    const internalW = doc.internal.pageSize.getWidth();
+                    const internalH = doc.internal.pageSize.getHeight();
+                    
+                    doc.setFillColor(transMode === 'white' ? '#ffffff' : customBgColor);
+                    doc.rect(0, 0, internalW, internalH, 'F');
+
+                    const availW = internalW - (marginOpt * 2);
+                    const availH = internalH - (marginOpt * 2);
+                    
+                    // Fit image into available space maintaining aspect ratio
+                    const ratio = Math.min(availW / processed.w, availH / processed.h);
+                    const finalImgW = processed.w * ratio;
+                    const finalImgH = processed.h * ratio;
+                    
+                    const x = marginOpt + (availW - finalImgW) / 2;
+                    const y = marginOpt + (availH - finalImgH) / 2;
+
+                    doc.addImage(processed.dataUrl, 'JPEG', x, y, finalImgW, finalImgH);
+
+                    if(!doMerge) {
+                        // Output as blob and add to Zip
+                        const pdfBlob = doc.output('blob');
+                        zip.file(`${fileName}_page_${i+1}.pdf`, pdfBlob);
+                    }
+                }
+
+                pBar.style.width = '100%';
+                pText.innerText = "Finalizing Download...";
+
+                if(doMerge) {
+                    doc.save(`${fileName}.pdf`);
+                } else {
+                    const zipContent = await zip.generateAsync({ type: "blob" });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(zipContent);
+                    link.download = `${fileName}_pages.zip`;
+                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                }
+
+                setTimeout(() => {
+                    overlay.classList.remove('flex'); overlay.classList.add('hidden');
+                    pBar.style.width = '0%';
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                alert("An error occurred during compilation.");
+                overlay.classList.remove('flex'); overlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+png_to_pdf.html
+Displaying png_to_pdf.html.

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Print File - Print Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2ff; overflow-x: hidden; }
+        
+        .page-bg { background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #c7d2fe 100%); background-size: 200% 200%; animation: gradientMove 12s ease infinite; }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .glass-box { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        
+        .upload-zone { border: 3px dashed #818cf8; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-zone:hover { background-color: #eef2ff; border-color: #4f46e5; transform: scale(1.02); }
+
+        /* Preview Box - Now Dynamic */
+        .preview-wrapper {
+            width: 100%;
+            height: 500px;
+            background-color: #f1f5f9;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: inset 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        #previewContainer {
+            background-color: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: all 0.4s ease; /* Smooth animation when changing portrait to landscape */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+        }
+
+        #previewContainer img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        #previewContainer iframe { width: 100%; height: 100%; border: none; pointer-events: none; }
+
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen page-bg">
+
+    <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b-4 border-indigo-500 no-print">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white px-5 py-2 rounded-xl font-bold transition shadow-sm border border-indigo-200">
+                <i class="fa-solid fa-arrow-left"></i> Main Dashboard
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 text-2xl flex items-center gap-2">
+                <i class="fa-solid fa-print text-indigo-500"></i> Direct Print Studio
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-6xl mx-auto p-4 md:p-8 flex items-center justify-center">
+        
+        <div class="w-full glass-box rounded-[2rem] p-6 md:p-10 relative overflow-hidden">
+            
+            <div id="uploadView" class="text-center w-full max-w-3xl mx-auto py-4">
+                <div class="inline-block bg-indigo-100 text-indigo-700 font-bold px-6 py-2 rounded-full text-xs mb-6 uppercase tracking-widest shadow-sm border border-indigo-200">
+                    <i class="fa-solid fa-bolt text-yellow-500 mr-1"></i> Quick Print Module
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black text-gray-800 mb-4 tracking-tight">Upload & <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-blue-600">Print File</span></h1>
+                <p class="text-gray-500 font-bold text-base mb-10">Upload any Image (JPG, PNG) or PDF Document. Select your paper size and orientation, and print directly with one click.</p>
+
+                <label for="fileInput" class="upload-zone flex flex-col items-center justify-center w-full h-80 bg-white rounded-3xl cursor-pointer shadow-inner relative group">
+                    <div class="absolute inset-0 bg-indigo-50/50 opacity-0 group-hover:opacity-100 transition duration-300 rounded-3xl"></div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-md group-hover:scale-110 transition duration-300 group-hover:-rotate-3">
+                            <i class="fa-solid fa-file-export"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800 mb-2">Select Image or PDF</h3>
+                        <p class="text-sm font-bold text-indigo-600 bg-indigo-50 px-5 py-1.5 rounded-full border border-indigo-200">Supports .JPG, .PNG, .PDF</p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*, application/pdf" class="hidden" onchange="handleFileSelection(event)">
+                </label>
+            </div>
+
+            <div id="workspaceView" class="hidden w-full">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-gray-800"><i class="fa-solid fa-print text-indigo-500 mr-2"></i> Print Settings</h2>
+                        <p class="text-sm font-bold text-gray-500 mt-1">File: <span id="fileNameDisplay" class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">document.pdf</span></p>
+                    </div>
+                    <button onclick="resetApp()" class="text-sm font-bold text-red-500 hover:text-red-700 bg-red-50 px-4 py-2 rounded-xl border border-red-200 transition"><i class="fa-solid fa-xmark mr-1"></i> Change File</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <div class="lg:col-span-4 flex flex-col gap-6">
+                        
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 class="font-black text-gray-800 mb-4 border-b pb-2 uppercase text-sm tracking-wider"><i class="fa-solid fa-scroll text-indigo-500 mr-2"></i> Paper Settings</h3>
+                            
+                            <div class="space-y-5">
+                                <div>
+                                    <label class="block text-xs font-black text-gray-500 uppercase mb-2">1. Select Print Size</label>
+                                    <div class="relative">
+                                        <select id="paperSize" onchange="updatePreviewLayout()" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-xl p-3 font-bold outline-none cursor-pointer focus:border-indigo-500 appearance-none">
+                                            <option value="A4">A4 Size (Standard)</option>
+                                            <option value="A3">A3 Size (Large)</option>
+                                            <option value="A5">A5 Size (Half A4)</option>
+                                            <option value="letter">Letter (8.5" x 11")</option>
+                                            <option value="legal">Legal (8.5" x 14")</option>
+                                            <option value="4x6">4x6 Photo Size</option>
+                                            <option value="5x7">5x7 Photo Size</option>
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-indigo-500">
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-black text-gray-500 uppercase mb-2">2. Orientation</label>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="relative">
+                                            <input type="radio" name="orientation" id="ort_p" value="portrait" class="hidden peer" onchange="updatePreviewLayout()" checked>
+                                            <label for="ort_p" class="flex flex-col items-center justify-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer transition bg-white peer-checked:border-indigo-500 peer-checked:bg-indigo-50 text-gray-600 peer-checked:text-indigo-700 font-bold text-sm shadow-sm">
+                                                <i class="fa-regular fa-file mb-1 text-lg"></i> Portrait
+                                            </label>
+                                        </div>
+                                        <div class="relative">
+                                            <input type="radio" name="orientation" id="ort_l" value="landscape" class="hidden peer" onchange="updatePreviewLayout()">
+                                            <label for="ort_l" class="flex flex-col items-center justify-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer transition bg-white peer-checked:border-indigo-500 peer-checked:bg-indigo-50 text-gray-600 peer-checked:text-indigo-700 font-bold text-sm shadow-sm">
+                                                <i class="fa-regular fa-file flex transform -rotate-90 mb-1 text-lg"></i> Landscape
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="executeDirectPrint()" class="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white py-5 rounded-2xl font-black text-2xl shadow-xl transition transform hover:-translate-y-1 flex items-center justify-center w-full mt-auto">
+                            <i class="fa-solid fa-print mr-3"></i> PRINT NOW
+                        </button>
+
+                    </div>
+
+                    <div class="lg:col-span-8 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center mb-2 px-1">
+                            <span class="text-sm font-black text-gray-700">Live Paper Preview</span>
+                            <span id="fileTypeBadge" class="text-[10px] font-black text-white bg-indigo-500 px-3 py-1 rounded-full uppercase tracking-wider">IMAGE</span>
+                        </div>
+                        
+                        <div class="preview-wrapper p-4">
+                            <div id="previewContainer" style="width: 100%; height: 100%;">
+                                </div>
+                        </div>
+                        <p class="text-[10px] font-bold text-gray-400 mt-3">* The box above shows the exact shape and orientation of the paper that will be printed.</p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white/95 z-[200] items-center justify-center flex-col backdrop-blur-sm">
+        <i class="fa-solid fa-spinner fa-spin text-7xl text-indigo-500 mb-6"></i>
+        <h2 class="text-3xl font-black text-gray-800">Preparing Print Job...</h2>
+        <p class="text-gray-500 font-bold mt-2">Enforcing exact paper size and orientation</p>
+    </div>
+
+    <script>
+        let selectedFileUrl = null;
+        let selectedFileType = null; // 'image' or 'pdf'
+
+        // Map aspect ratios for the Live Preview Box
+        // Format: [Width, Height]
+        const aspectRatios = {
+            'A4': [1, 1.414],
+            'A3': [1, 1.414],
+            'A5': [1, 1.414],
+            'letter': [8.5, 11],
+            'legal': [8.5, 14],
+            '4x6': [4, 6],
+            '5x7': [5, 7]
+        };
+
+        // Strict CSS Sizes for the Print Dialog Window
+        const cssPrintSizes = {
+            'A4': 'A4',
+            'A3': 'A3',
+            'A5': 'A5',
+            'letter': 'letter',
+            'legal': 'legal',
+            '4x6': '4in 6in',
+            '5x7': '5in 7in'
+        };
+
+        // --- 1. Handle File Selection ---
+        function handleFileSelection(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            document.getElementById('fileNameDisplay').innerText = file.name;
+
+            if(file.type.startsWith('image/')) {
+                selectedFileType = 'image';
+                document.getElementById('fileTypeBadge').innerText = 'IMAGE';
+                document.getElementById('fileTypeBadge').className = 'text-[10px] font-black text-white bg-emerald-500 px-3 py-1 rounded-full uppercase tracking-wider';
+            } else if (file.type === 'application/pdf') {
+                selectedFileType = 'pdf';
+                document.getElementById('fileTypeBadge').innerText = 'PDF DOCUMENT';
+                document.getElementById('fileTypeBadge').className = 'text-[10px] font-black text-white bg-red-500 px-3 py-1 rounded-full uppercase tracking-wider';
+            } else {
+                alert("Please select a valid Image (JPG, PNG) or PDF file.");
+                event.target.value = '';
+                return;
+            }
+
+            selectedFileUrl = URL.createObjectURL(file);
+            
+            // Render the inner content
+            renderPreviewContent();
+
+            document.getElementById('uploadView').classList.add('hidden');
+            document.getElementById('workspaceView').classList.remove('hidden');
+            
+            // Set the dynamic shape of the preview box
+            updatePreviewLayout();
+            
+            event.target.value = ''; 
+        }
+
+        // --- 2. Update the Layout of the Preview Box dynamically ---
+        function updatePreviewLayout() {
+            const sizeKey = document.getElementById('paperSize').value;
+            const orientation = document.querySelector('input[name="orientation"]:checked').value;
+            const container = document.getElementById('previewContainer');
+
+            let baseRatio = aspectRatios[sizeKey];
+            
+            // Apply Orientation to Ratio
+            let finalRatioStr;
+            if(orientation === 'portrait') {
+                finalRatioStr = `${baseRatio[0]} / ${baseRatio[1]}`;
+                container.style.width = 'auto';
+                container.style.height = '100%';
+            } else {
+                finalRatioStr = `${baseRatio[1]} / ${baseRatio[0]}`;
+                container.style.width = '100%';
+                container.style.height = 'auto';
+            }
+
+            container.style.aspectRatio = finalRatioStr;
+        }
+
+        // --- 3. Render the Inner File Content ---
+        function renderPreviewContent() {
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = ""; 
+
+            if (selectedFileType === 'image') {
+                const img = document.createElement('img');
+                img.src = selectedFileUrl;
+                container.appendChild(img);
+            } else if (selectedFileType === 'pdf') {
+                const iframe = document.createElement('iframe');
+                iframe.src = selectedFileUrl + "#toolbar=0&view=FitH"; 
+                container.appendChild(iframe);
+            }
+        }
+
+        // --- 4. Execute Direct Print Engine (Fixed & Bulletproof) ---
+        async function executeDirectPrint() {
+            if(!selectedFileUrl) return;
+
+            const loader = document.getElementById('loadingOverlay');
+            loader.classList.replace('hidden', 'flex');
+
+            const paperSizeKey = document.getElementById('paperSize').value;
+            const orientation = document.querySelector('input[name="orientation"]:checked').value;
+
+            // Generate strict CSS @page string (e.g. "size: 4in 6in landscape;")
+            let cssSizeCommand = cssPrintSizes[paperSizeKey];
+            if(paperSizeKey === '4x6' || paperSizeKey === '5x7') {
+                // Custom dimensions need strict width/height passing for landscape
+                if(orientation === 'landscape') {
+                    let parts = cssSizeCommand.split(' ');
+                    cssSizeCommand = `${parts[1]} ${parts[0]}`; // Swap width/height
+                }
+            } else {
+                // Standard sizes like A4, A3 support standard landscape keyword
+                cssSizeCommand = `${cssSizeCommand} ${orientation}`;
+            }
+
+            try {
+                let printContentHTML = "";
+
+                if (selectedFileType === 'image') {
+                    // Image Print HTML
+                    printContentHTML = `<div class="page-container"><img src="${selectedFileUrl}"></div>`;
+                } 
+                else if (selectedFileType === 'pdf') {
+                    // FORCE PDF RESIZING: Convert PDF to images using PDF.js so size/orientation works
+                    const loadingTask = pdfjsLib.getDocument(selectedFileUrl);
+                    const pdf = await loadingTask.promise;
+                    const totalPages = pdf.numPages;
+
+                    for(let i = 1; i <= totalPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2.0 }); // High resolution render
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        
+                        printContentHTML += `<div class="page-container"><img src="${imgData}"></div>`;
+                    }
+                }
+
+                // Create Print Window
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert("Popup blocked! Please allow popups to print.");
+                    loader.classList.replace('flex', 'hidden');
+                    return;
+                }
+
+                // THE MAGIC CSS @page RULE THAT FORCES PRINTER TO OBEY
+                const finalPrintHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Document</title>
+                    <style>
+                        @page { 
+                            size: ${cssSizeCommand}; 
+                            margin: 0; 
+                        }
+                        body, html { 
+                            margin: 0; padding: 0; background: white; 
+                            -webkit-print-color-adjust: exact !important; 
+                            print-color-adjust: exact !important; 
+                        }
+                        .page-container {
+                            width: 100vw;
+                            height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            page-break-after: always;
+                            overflow: hidden;
+                            box-sizing: border-box;
+                        }
+                        img { 
+                            max-width: 100%; 
+                            max-height: 100%; 
+                            object-fit: contain; 
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${printContentHTML}
+                    <script>
+                        window.onload = function() {
+                            setTimeout(() => { 
+                                window.print(); 
+                                window.close(); 
+                            }, 500);
+                        };
+                    <\/script>
+                </body>
+                </html>`;
+
+                printWindow.document.write(finalPrintHTML);
+                printWindow.document.close();
+
+            } catch (error) {
+                console.error("Print processing error:", error);
+                alert("Error processing the file for print. Is the PDF corrupted/password protected?");
+            } finally {
+                loader.classList.replace('flex', 'hidden');
+            }
+        }
+
+        // --- 5. Reset App ---
+        function resetApp() {
+            if(selectedFileUrl) {
+                URL.revokeObjectURL(selectedFileUrl); 
+                selectedFileUrl = null;
+            }
+            selectedFileType = null;
+            
+            document.getElementById('previewContainer').innerHTML = "";
+            document.getElementById('workspaceView').classList.add('hidden');
+            document.getElementById('uploadView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

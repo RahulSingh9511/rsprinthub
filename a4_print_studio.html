@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrintCraft Free | A4 Smart Print Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Fabric.js for Advanced Canvas (A4 Print Layout) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        .font-heading { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Drag & Drop Zone */
+        .dropzone-active { border-color: #3b82f6 !important; background-color: #eff6ff !important; transform: scale(1.02); }
+
+        /* A4 Canvas Container Styling */
+        .a4-workspace-bg {
+            background-color: #94a3b8;
+            background-image: linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        #a4Wrapper {
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            background: white;
+            transition: transform 0.2s ease-out;
+            transform-origin: top center;
+        }
+
+        /* Perspective Crop Tool Handles */
+        .crop-handle {
+            position: absolute; width: 24px; height: 24px; background: white; border: 3px solid #3b82f6; 
+            border-radius: 50%; cursor: pointer; transform: translate(-50%, -50%); z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .crop-handle:active { transform: translate(-50%, -50%) scale(1.3); background: #3b82f6; }
+        #polygonArea { position: absolute; pointer-events: none; border: 2px dashed #3b82f6; background: rgba(59, 130, 246, 0.2); z-index: 50; }
+
+        /* UI Controls */
+        .panel-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 13px; outline: none; transition: 0.2s; color: #334155; font-weight: 600; background: white; }
+        .panel-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .panel-btn { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer; transition: 0.2s; text-align: center; }
+        .panel-btn:hover { background: #f1f5f9; color: #3b82f6; border-color: #93c5fd; }
+        .panel-btn.active { background: #3b82f6; color: white; border-color: #2563eb; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- 1. NAVIGATION BAR -->
+    <header class="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-50 sticky top-0 shadow-sm">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="text-slate-500 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-sm border border-transparent hover:border-blue-100">
+                <i class="fa-solid fa-arrow-left"></i> Dashboard
+            </a>
+            <div class="h-6 w-px bg-gray-200"></div>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-lg shadow-sm">
+                    <i class="fa-solid fa-print"></i>
+                </div>
+                <h1 class="text-lg font-heading font-extrabold text-gray-800 tracking-tight">PrintCraft <span class="text-blue-500">Free</span></h1>
+                <span class="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wider ml-2 border border-emerald-200 hidden sm:inline-block">100% Free & Unlimited</span>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="group relative cursor-help flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200 shadow-sm">
+                <i class="fa-solid fa-circle-info text-blue-500"></i> Print Guide
+                <div class="absolute hidden group-hover:block top-full right-0 mt-2 bg-slate-800 text-white text-xs px-3 py-2 rounded whitespace-nowrap shadow-lg z-50 font-normal">Best for ID cards, bills, receipts, and skewed photos</div>
+            </div>
+            <button onclick="resetApp()" class="text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 hover:border-red-200 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-trash-can"></i> Reset Canvas
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. HERO DRAG-AND-DROP ZONE -->
+    <div id="heroUploadView" class="flex-grow flex flex-col items-center justify-center p-8 transition-all duration-500">
+        <div class="text-center max-w-2xl mb-10 animate-fade">
+            <h2 class="text-4xl md:text-5xl font-heading font-extrabold text-gray-900 mb-4 tracking-tight">Straighten & Print Images on A4 <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">Perfectly</span></h2>
+            <p class="text-gray-500 text-lg font-medium">Upload any image, fix bad angles, set your exact real-world size, and print on an A4 sheet instantly.</p>
+        </div>
+
+        <div id="mainDropzone" class="w-full max-w-4xl bg-white border-4 border-dashed border-gray-300 rounded-3xl p-16 flex flex-col items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 shadow-sm animate-fade" style="animation-delay: 0.1s;" onclick="document.getElementById('fileInput').click()">
+            <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner pointer-events-none">
+                <i class="fa-solid fa-crop-simple"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2 pointer-events-none">Upload Image / Drag & Drop File</h3>
+            <p class="text-gray-500 font-medium pointer-events-none">Accepts JPG, JPEG, PNG, WEBP files. Processed securely on your device.</p>
+            
+            <button class="mt-8 bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-xl font-bold text-sm transition shadow-lg pointer-events-none flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> Browse File
+            </button>
+        </div>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" class="hidden" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- 3. THE SMART STRAIGHTENING WORKSPACE -->
+    <div id="cropWorkspaceView" class="hidden flex-grow flex-col overflow-hidden bg-slate-900">
+        <div class="h-16 bg-slate-800 border-b border-slate-700 flex items-center justify-between px-6 shrink-0 shadow-md">
+            <div>
+                <h2 class="font-bold text-white flex items-center gap-2 text-lg"><i class="fa-solid fa-crop text-blue-400"></i> Smart Document Straightener</h2>
+                <p class="text-[10px] font-medium text-slate-400 mt-0.5">Drag the 4 blue corners to match the document's actual edges in the photo.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="skipStraighten()" class="text-slate-300 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">Skip Correction</button>
+                <button onclick="executeStraightening()" class="text-white bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Straighten & Proceed
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-grow relative flex items-center justify-center p-6 overflow-hidden" id="cropCanvasContainer">
+            <div class="relative inline-block max-w-full max-h-full" id="cropImageWrapper">
+                <img id="cropSourceImg" src="" class="max-w-full max-h-full object-contain pointer-events-none shadow-2xl rounded-sm">
+                <!-- Handles for perspective -->
+                <div id="handleTL" class="crop-handle"></div>
+                <div id="handleTR" class="crop-handle"></div>
+                <div id="handleBL" class="crop-handle"></div>
+                <div id="handleBR" class="crop-handle"></div>
+                <svg id="cropSvgOverlay" class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 40;">
+                    <polygon id="cropPolygon" points="0,0 0,0 0,0 0,0" fill="rgba(59, 130, 246, 0.15)" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5"/>
+                </svg>
+            </div>
+        </div>
+        
+        <div class="h-16 bg-slate-800 border-t border-slate-700 flex items-center justify-center shrink-0 gap-4">
+            <button onclick="rotateSourceImage()" class="text-slate-300 bg-slate-700 hover:bg-slate-600 hover:text-white px-6 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> Rotate 90°
+            </button>
+        </div>
+        <!-- Hidden canvas for math processing -->
+        <canvas id="mathCanvas" class="hidden"></canvas>
+    </div>
+
+    <!-- 4. MAIN INTERACTIVE CANVAS -->
+    <div id="a4WorkspaceView" class="hidden flex-grow flex overflow-hidden bg-slate-50">
+        
+        <div class="flex-grow flex flex-col relative overflow-hidden">
+            <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+                <div class="flex items-center gap-4">
+                    <h2 class="font-bold text-gray-800 flex items-center gap-2"><i class="fa-regular fa-file-lines text-blue-500"></i> A4 Layout Canvas</h2>
+                    <span class="text-[10px] font-bold bg-gray-100 text-gray-600 px-3 py-1 rounded-full border border-gray-200"><i class="fa-solid fa-arrows-up-down-left-right mr-1"></i> Drag & Resize directly on sheet</span>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg border border-gray-200">
+                    <button onclick="zoomA4(-0.1)" class="w-8 h-8 rounded hover:bg-white text-gray-500 flex items-center justify-center transition"><i class="fa-solid fa-minus text-xs"></i></button>
+                    <span id="a4ZoomLabel" class="text-xs font-bold text-gray-700 w-12 text-center">100%</span>
+                    <button onclick="zoomA4(0.1)" class="w-8 h-8 rounded hover:bg-white text-gray-500 flex items-center justify-center transition"><i class="fa-solid fa-plus text-xs"></i></button>
+                </div>
+            </div>
+
+            <!-- Virtual A4 Container -->
+            <div class="a4-workspace-bg flex-grow relative overflow-auto flex flex-col items-center pt-10 pb-20" id="a4ScrollContainer" onclick="clearA4Selection(event)">
+                <div id="a4ZoomContainer" style="transform-origin: top center; transition: transform 0.1s ease-out;">
+                    <div class="absolute -top-6 left-0 right-0 h-4 bg-white/80 border-b border-gray-400 flex text-[8px] font-mono text-gray-600 overflow-hidden" style="background-image: repeating-linear-gradient(90deg, transparent, transparent 37.8px, #94a3b8 37.8px, #94a3b8 38px); background-position: left bottom;"></div>
+                    <div class="absolute top-0 -left-6 bottom-0 w-4 bg-white/80 border-r border-gray-400 flex flex-col text-[8px] font-mono text-gray-600 overflow-hidden" style="background-image: repeating-linear-gradient(0deg, transparent, transparent 37.8px, #94a3b8 37.8px, #94a3b8 38px); background-position: right top;"></div>
+
+                    <div id="a4Wrapper" class="relative">
+                        <canvas id="a4FabricCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="w-[340px] bg-white border-l border-gray-200 flex flex-col shrink-0 z-30 shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-gray-100 bg-gray-50 shrink-0">
+                <h2 class="text-sm font-black text-gray-800 uppercase tracking-widest"><i class="fa-solid fa-sliders text-blue-500 mr-2"></i> Precision Layout</h2>
+                <p id="selectionStatusMsg" class="text-[10px] font-semibold text-gray-400 mt-1">Select an image on the canvas to resize.</p>
+            </div>
+
+            <div class="flex-grow overflow-y-auto p-5 space-y-6" id="controlsPanelGroup" style="opacity: 0.5; pointer-events: none;">
+                
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">1. Pre-set Standard Sizes</label>
+                    <select id="presetSizeDropdown" class="panel-input cursor-pointer bg-white" onchange="applyPresetSize(this.value)">
+                        <option value="" disabled selected>-- Select a standard size --</option>
+                        <option value="full">Full A4 Page (Fit to sheet)</option>
+                        <option value="passport">Passport Size (35mm x 45mm)</option>
+                        <option value="idcard">Aadhaar / ID Card (85mm x 55mm)</option>
+                        <option value="stamp">Stamp Size (20mm x 25mm)</option>
+                        <option value="postcard">Postcard (100mm x 150mm)</option>
+                        <option value="pancard">PAN Card (86mm x 54mm)</option>
+                    </select>
+                </div>
+
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-bold text-blue-800 uppercase tracking-wider">2. Exact Dimensions</label>
+                        <select id="unitSelector" class="bg-white border border-blue-200 text-blue-600 text-[10px] font-bold rounded px-2 py-1 outline-none cursor-pointer" onchange="updateUIForUnit()">
+                            <option value="mm">MM</option>
+                            <option value="cm">CM</option>
+                            <option value="inch">INCH</option>
+                            <option value="px">PIXEL</option>
+                        </select>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Width (<span class="lblUnit">mm</span>)</label>
+                            <input type="number" id="inpObjWidth" step="0.1" class="panel-input text-center" onchange="applyManualDimensions()">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block mb-1">Height (<span class="lblUnit">mm</span>)</label>
+                            <input type="number" id="inpObjHeight" step="0.1" class="panel-input text-center" onchange="applyManualDimensions()">
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[10px] text-gray-500 cursor-pointer mt-2 font-semibold">
+                        <input type="checkbox" id="lockAspectCheck" checked class="accent-blue-500 w-3 h-3"> Lock Aspect Ratio (Prevent stretching)
+                    </label>
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wider">3. Alignment & Grid</label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button onclick="alignObject('centerH')" class="panel-btn flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-arrows-left-right-to-line"></i> Center H</button>
+                        <button onclick="alignObject('centerV')" class="panel-btn flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-arrows-up-down-to-line"></i> Center V</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 border border-gray-200 rounded-lg p-3">
+                        <label class="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer font-bold w-full">
+                            <input type="checkbox" id="snapGridCheck" class="accent-blue-500 w-4 h-4" onchange="toggleGrid()"> Snap to Grid Setup
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-4">
+                    <button onclick="deleteSelectedObject()" class="panel-btn w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> Delete Selected Image
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. FINISHING ACTION SECTION -->
+            <div class="p-5 bg-white border-t border-gray-200 shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] relative z-40">
+                <button onclick="document.getElementById('fileInput').click()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 mb-3 text-sm border border-gray-300">
+                    <i class="fa-solid fa-images text-blue-500"></i> Add Multiple Images
+                </button>
+
+                <button id="btnRealPrint" onclick="triggerBulletproofPrint()" class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white py-4 rounded-xl font-black text-lg shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> INSTANT PRINT / SAVE PDF
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Hidden Processing Section -->
+    <div id="printOverlay" class="fixed inset-0 bg-white z-[9999] hidden flex-col items-center justify-center text-blue-600">
+        <i class="fa-solid fa-circle-notch fa-spin text-5xl mb-4"></i>
+        <h2 class="text-2xl font-bold">Preparing High-Quality Print...</h2>
+    </div>
+
+    <script>
+        // ==========================================
+        // SYSTEM CONSTANTS & STATE
+        // ==========================================
+        const DPI = 300; 
+        const A4_WIDTH_PX = 2480; 
+        const A4_HEIGHT_PX = 3508;
+        
+        const PX_PER_MM = 11.811;
+        const PX_PER_CM = 118.11;
+        const PX_PER_INCH = 300;
+
+        let a4Canvas = null;
+        let currentZoom = 0.2; 
+        
+        // Crop Tool State
+        let cropImgObj = new Image();
+        let cropRotation = 0;
+        let cropHandles = [];
+        let isDraggingCrop = false;
+        let activeHandle = null;
+
+        // ==========================================
+        // 1 & 2. NAVIGATION & UPLOAD LOGIC
+        // ==========================================
+        const dropzone = document.getElementById('mainDropzone');
+        const heroView = document.getElementById('heroUploadView');
+        const cropView = document.getElementById('cropWorkspaceView');
+        const a4View = document.getElementById('a4WorkspaceView');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => dropzone.addEventListener(eventName, () => dropzone.classList.add('dropzone-active')));
+        ['dragleave', 'drop'].forEach(eventName => dropzone.addEventListener(eventName, () => dropzone.classList.remove('dropzone-active')));
+
+        dropzone.addEventListener('drop', e => handleFileSelect({ target: { files: e.dataTransfer.files } }));
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if(!files || files.length === 0) return;
+
+            const file = files[0]; 
+            if(!file.type.match('image.*')) return alert("Please upload a valid image file.");
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                cropRotation = 0;
+                cropImgObj.src = event.target.result;
+                cropImgObj.onload = () => {
+                    initCropTool();
+                    if(!a4View.classList.contains('hidden')) {
+                        a4View.classList.add('hidden'); a4View.classList.remove('flex');
+                    } else {
+                        heroView.classList.add('hidden');
+                    }
+                    cropView.classList.remove('hidden'); cropView.classList.add('flex');
+                };
+            };
+            reader.readAsDataURL(file);
+            e.target.value = ''; 
+        }
+
+        function resetApp() {
+            if(confirm("Clear A4 Canvas and all uploaded images?")) {
+                if(a4Canvas) a4Canvas.clear();
+                if(a4Canvas) a4Canvas.backgroundColor = '#ffffff';
+                
+                a4View.classList.add('hidden'); a4View.classList.remove('flex');
+                cropView.classList.add('hidden'); cropView.classList.remove('flex');
+                heroView.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // 3. PERSPECTIVE CROP (STRAIGHTENING) TOOL
+        // ==========================================
+        function initCropTool() {
+            const wrapper = document.getElementById('cropImageWrapper');
+            const imgEl = document.getElementById('cropSourceImg');
+            
+            imgEl.src = cropImgObj.src;
+            imgEl.style.transform = `rotate(${cropRotation}deg)`;
+
+            setTimeout(() => {
+                const rect = imgEl.getBoundingClientRect();
+                const cw = rect.width;
+                const ch = rect.height;
+
+                cropHandles = [
+                    { x: cw * 0.1, y: ch * 0.1 }, 
+                    { x: cw * 0.9, y: ch * 0.1 }, 
+                    { x: cw * 0.9, y: ch * 0.9 }, 
+                    { x: cw * 0.1, y: ch * 0.9 }  
+                ];
+
+                updateCropUI();
+                setupCropDraggers();
+            }, 50);
+        }
+
+        function rotateSourceImage() {
+            cropRotation = (cropRotation + 90) % 360;
+            initCropTool(); 
+        }
+
+        function updateCropUI() {
+            const hTL = document.getElementById('handleTL');
+            const hTR = document.getElementById('handleTR');
+            const hBL = document.getElementById('handleBL');
+            const hBR = document.getElementById('handleBR');
+            const poly = document.getElementById('cropPolygon');
+
+            hTL.style.left = cropHandles[0].x + 'px'; hTL.style.top = cropHandles[0].y + 'px';
+            hTR.style.left = cropHandles[1].x + 'px'; hTR.style.top = cropHandles[1].y + 'px';
+            hBR.style.left = cropHandles[2].x + 'px'; hBR.style.top = cropHandles[2].y + 'px';
+            hBL.style.left = cropHandles[3].x + 'px'; hBL.style.top = cropHandles[3].y + 'px';
+
+            poly.setAttribute('points', `${cropHandles[0].x},${cropHandles[0].y} ${cropHandles[1].x},${cropHandles[1].y} ${cropHandles[2].x},${cropHandles[2].y} ${cropHandles[3].x},${cropHandles[3].y}`);
+        }
+
+        function setupCropDraggers() {
+            const handles = ['handleTL', 'handleTR', 'handleBR', 'handleBL'];
+            const wrapper = document.getElementById('cropImageWrapper');
+
+            handles.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                el.onmousedown = (e) => { isDraggingCrop = true; activeHandle = idx; };
+            });
+
+            document.onmousemove = (e) => {
+                if(isDraggingCrop && activeHandle !== null) {
+                    const rect = wrapper.getBoundingClientRect();
+                    let nx = e.clientX - rect.left;
+                    let ny = e.clientY - rect.top;
+
+                    if(nx < 0) nx = 0; if(nx > rect.width) nx = rect.width;
+                    if(ny < 0) ny = 0; if(ny > rect.height) ny = rect.height;
+
+                    cropHandles[activeHandle].x = nx;
+                    cropHandles[activeHandle].y = ny;
+                    updateCropUI();
+                }
+            };
+
+            document.onmouseup = () => { isDraggingCrop = false; activeHandle = null; };
+            
+            handles.forEach((id, idx) => {
+                const el = document.getElementById(id);
+                el.ontouchstart = (e) => { isDraggingCrop = true; activeHandle = idx; e.preventDefault(); };
+            });
+            document.ontouchmove = (e) => {
+                if(isDraggingCrop && activeHandle !== null) {
+                    const rect = wrapper.getBoundingClientRect();
+                    let nx = e.touches[0].clientX - rect.left;
+                    let ny = e.touches[0].clientY - rect.top;
+                    if(nx < 0) nx = 0; if(nx > rect.width) nx = rect.width;
+                    if(ny < 0) ny = 0; if(ny > rect.height) ny = rect.height;
+                    cropHandles[activeHandle].x = nx; cropHandles[activeHandle].y = ny;
+                    updateCropUI();
+                }
+            };
+            document.ontouchend = () => { isDraggingCrop = false; activeHandle = null; };
+        }
+
+        function skipStraighten() {
+            const canvas = document.getElementById('mathCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            let finalW = cropImgObj.width; let finalH = cropImgObj.height;
+            if(cropRotation === 90 || cropRotation === 270) { finalW = cropImgObj.height; finalH = cropImgObj.width; }
+            
+            canvas.width = finalW; canvas.height = finalH;
+            ctx.translate(finalW/2, finalH/2);
+            ctx.rotate(cropRotation * Math.PI / 180);
+            ctx.drawImage(cropImgObj, -cropImgObj.width/2, -cropImgObj.height/2);
+
+            const resultDataUrl = canvas.toDataURL('image/jpeg', 1.0);
+            openA4Workspace(resultDataUrl);
+        }
+
+        function executeStraightening() {
+            const wrapper = document.getElementById('cropImageWrapper');
+            const imgEl = document.getElementById('cropSourceImg');
+            
+            const scaleX = cropImgObj.width / imgEl.getBoundingClientRect().width;
+            const scaleY = cropImgObj.height / imgEl.getBoundingClientRect().height;
+
+            const minX = Math.min(cropHandles[0].x, cropHandles[3].x) * scaleX;
+            const minY = Math.min(cropHandles[0].y, cropHandles[1].y) * scaleY;
+            const maxX = Math.max(cropHandles[1].x, cropHandles[2].x) * scaleX;
+            const maxY = Math.max(cropHandles[2].y, cropHandles[3].y) * scaleY;
+            
+            const w = maxX - minX;
+            const h = maxY - minY;
+
+            const canvas = document.getElementById('mathCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            let tmpW = cropImgObj.width; let tmpH = cropImgObj.height;
+            if(cropRotation === 90 || cropRotation === 270) { tmpW = cropImgObj.height; tmpH = cropImgObj.width; }
+            
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = tmpW; tmpCanvas.height = tmpH;
+            const tCtx = tmpCanvas.getContext('2d');
+            tCtx.translate(tmpW/2, tmpH/2);
+            tCtx.rotate(cropRotation * Math.PI / 180);
+            tCtx.drawImage(cropImgObj, -cropImgObj.width/2, -cropImgObj.height/2);
+
+            canvas.width = w; canvas.height = h;
+            ctx.drawImage(tmpCanvas, minX, minY, w, h, 0, 0, w, h);
+
+            const resultDataUrl = canvas.toDataURL('image/jpeg', 1.0);
+            openA4Workspace(resultDataUrl);
+        }
+
+
+        // ==========================================
+        // 4. A4 VIRTUAL LAYOUT CANVAS
+        // ==========================================
+        function openA4Workspace(imageDataUrl) {
+            cropView.classList.add('hidden'); cropView.classList.remove('flex');
+            a4View.classList.remove('hidden'); a4View.classList.add('flex');
+
+            if(!a4Canvas) {
+                a4Canvas = new fabric.Canvas('a4FabricCanvas', {
+                    width: A4_WIDTH_PX,
+                    height: A4_HEIGHT_PX,
+                    backgroundColor: '#ffffff',
+                    preserveObjectStacking: true,
+                    selectionBorderColor: '#3b82f6',
+                    selectionColor: 'rgba(59, 130, 246, 0.1)',
+                    selectionLineWidth: 3
+                });
+
+                fabric.Object.prototype.set({
+                    transparentCorners: false,
+                    cornerColor: '#3b82f6',
+                    cornerStrokeColor: '#ffffff',
+                    borderColor: '#3b82f6',
+                    cornerSize: 30, 
+                    padding: 10,
+                    cornerStyle: 'circle'
+                });
+
+                a4Canvas.on('selection:created', handleFabricSelect);
+                a4Canvas.on('selection:updated', handleFabricSelect);
+                a4Canvas.on('selection:cleared', handleFabricDeselect);
+                a4Canvas.on('object:modified', updateControlsUI);
+                a4Canvas.on('object:scaling', updateControlsUI);
+                
+                const wrapper = document.getElementById('a4ScrollContainer');
+                let targetZoom = (wrapper.clientWidth - 80) / A4_WIDTH_PX;
+                if(targetZoom > 1) targetZoom = 1;
+                currentZoom = targetZoom;
+                applyA4Zoom();
+            }
+
+            fabric.Image.fromURL(imageDataUrl, function(img) {
+                const targetH = PX_PER_CM * 15;
+                if(img.height > targetH) { img.scaleToHeight(targetH); }
+
+                img.set({
+                    left: A4_WIDTH_PX / 2,
+                    top: A4_HEIGHT_PX / 2,
+                    originX: 'center',
+                    originY: 'center',
+                    shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.1)', blur: 20, offsetX: 10, offsetY: 10 })
+                });
+
+                a4Canvas.add(img);
+                a4Canvas.setActiveObject(img);
+                a4Canvas.requestRenderAll();
+            });
+        }
+
+        function zoomA4(delta) {
+            currentZoom += delta;
+            if(currentZoom < 0.1) currentZoom = 0.1;
+            if(currentZoom > 1.5) currentZoom = 1.5;
+            applyA4Zoom();
+        }
+
+        function applyA4Zoom() {
+            document.getElementById('a4ZoomLabel').innerText = Math.round(currentZoom * 100) + '%';
+            document.getElementById('a4ZoomContainer').style.transform = `scale(${currentZoom})`;
+        }
+
+        function handleFabricSelect(e) {
+            const obj = a4Canvas.getActiveObject();
+            if(obj) {
+                document.getElementById('controlsPanelGroup').style.opacity = '1';
+                document.getElementById('controlsPanelGroup').style.pointerEvents = 'auto';
+                document.getElementById('selectionStatusMsg').innerText = "Object Selected. Edit dimensions.";
+                updateControlsUI();
+            }
+        }
+
+        function handleFabricDeselect() {
+            document.getElementById('controlsPanelGroup').style.opacity = '0.5';
+            document.getElementById('controlsPanelGroup').style.pointerEvents = 'none';
+            document.getElementById('selectionStatusMsg').innerText = "Select an image on the canvas to resize.";
+            document.getElementById('inpObjWidth').value = '';
+            document.getElementById('inpObjHeight').value = '';
+            document.getElementById('presetSizeDropdown').value = '';
+        }
+
+        function clearA4Selection(e) {
+            if(e.target.id === 'a4ScrollContainer' || e.target.id === 'a4ZoomContainer') {
+                a4Canvas.discardActiveObject();
+                a4Canvas.requestRenderAll();
+            }
+        }
+
+        function getMultiplierForUnit() {
+            const u = document.getElementById('unitSelector').value;
+            if(u === 'mm') return PX_PER_MM;
+            if(u === 'cm') return PX_PER_CM;
+            if(u === 'inch') return PX_PER_INCH;
+            return 1; 
+        }
+
+        function updateUIForUnit() {
+            const u = document.getElementById('unitSelector').value;
+            document.querySelectorAll('.lblUnit').forEach(el => el.innerText = u);
+            updateControlsUI();
+        }
+
+        function updateControlsUI() {
+            const obj = a4Canvas.getActiveObject();
+            if(!obj) return;
+            
+            const mult = getMultiplierForUnit();
+            const w = (obj.getScaledWidth() / mult).toFixed(1);
+            const h = (obj.getScaledHeight() / mult).toFixed(1);
+            
+            document.getElementById('inpObjWidth').value = w;
+            document.getElementById('inpObjHeight').value = h;
+        }
+
+        function applyManualDimensions() {
+            const obj = a4Canvas.getActiveObject();
+            if(!obj) return;
+
+            const mult = getMultiplierForUnit();
+            const newW = parseFloat(document.getElementById('inpObjWidth').value) * mult;
+            const newH = parseFloat(document.getElementById('inpObjHeight').value) * mult;
+            
+            const isLocked = document.getElementById('lockAspectCheck').checked;
+
+            if(isLocked) {
+                obj.scaleToWidth(newW);
+            } else {
+                obj.set({ scaleX: newW / obj.width, scaleY: newH / obj.height });
+            }
+            
+            obj.setCoords();
+            a4Canvas.requestRenderAll();
+            document.getElementById('presetSizeDropdown').value = '';
+        }
+
+        function applyPresetSize(val) {
+            const obj = a4Canvas.getActiveObject();
+            if(!obj || !val) return;
+
+            document.getElementById('lockAspectCheck').checked = false;
+
+            let wMm, hMm;
+            if(val === 'full') { wMm = 210; hMm = 297; }
+            else if(val === 'passport') { wMm = 35; hMm = 45; }
+            else if(val === 'idcard') { wMm = 55; hMm = 85; } 
+            else if(val === 'stamp') { wMm = 20; hMm = 25; }
+            else if(val === 'postcard') { wMm = 100; hMm = 150; }
+            else if(val === 'pancard') { wMm = 86; hMm = 54; } 
+
+            const wPx = wMm * PX_PER_MM;
+            const hPx = hMm * PX_PER_MM;
+
+            obj.set({ scaleX: wPx / obj.width, scaleY: hPx / obj.height });
+            obj.setCoords();
+            a4Canvas.requestRenderAll();
+            updateControlsUI();
+        }
+
+        function alignObject(action) {
+            const obj = a4Canvas.getActiveObject();
+            if(!obj) return;
+
+            if(action === 'centerH') { obj.set({ left: A4_WIDTH_PX / 2 }); }
+            if(action === 'centerV') { obj.set({ top: A4_HEIGHT_PX / 2 }); }
+            
+            obj.setCoords();
+            a4Canvas.requestRenderAll();
+        }
+
+        function deleteSelectedObject() {
+            const obj = a4Canvas.getActiveObject();
+            if(obj) {
+                a4Canvas.remove(obj);
+                a4Canvas.discardActiveObject();
+                a4Canvas.requestRenderAll();
+            }
+        }
+
+        // --- Grid Snap ---
+        let gridLines = [];
+        function toggleGrid() {
+            const snap = document.getElementById('snapGridCheck').checked;
+            
+            if(snap && gridLines.length === 0) {
+                const gridSizePx = 10 * PX_PER_MM; 
+                for (var i = 0; i < (A4_WIDTH_PX / gridSizePx); i++) {
+                    gridLines.push(new fabric.Line([i * gridSizePx, 0, i * gridSizePx, A4_HEIGHT_PX], { stroke: '#e2e8f0', selectable: false, evented: false }));
+                }
+                for (var i = 0; i < (A4_HEIGHT_PX / gridSizePx); i++) {
+                    gridLines.push(new fabric.Line([0, i * gridSizePx, A4_WIDTH_PX, i * gridSizePx], { stroke: '#e2e8f0', selectable: false, evented: false }));
+                }
+                gridLines.forEach(l => a4Canvas.add(l));
+                gridLines.forEach(l => a4Canvas.sendToBack(l));
+            } else if (!snap) {
+                gridLines.forEach(l => a4Canvas.remove(l));
+                gridLines = [];
+            }
+            a4Canvas.requestRenderAll();
+
+            a4Canvas.on('object:moving', function(options) {
+                if(!document.getElementById('snapGridCheck').checked) return;
+                const gridSizePx = 10 * PX_PER_MM;
+                options.target.set({
+                    left: Math.round(options.target.left / gridSizePx) * gridSizePx,
+                    top: Math.round(options.target.top / gridSizePx) * gridSizePx
+                });
+            });
+        }
+
+        // ==========================================
+        // 5. BULLETPROOF PRINT ACTION (Via High Res Img)
+        // ==========================================
+        async function triggerBulletproofPrint() {
+            if(!a4Canvas) return;
+            
+            // 1. Remove selection borders
+            a4Canvas.discardActiveObject();
+            
+            // 2. Hide visual grid temporarily
+            const snapActive = document.getElementById('snapGridCheck').checked;
+            if(snapActive) gridLines.forEach(l => a4Canvas.remove(l));
+            
+            a4Canvas.requestRenderAll();
+            
+            // Show Loader
+            const loader = document.getElementById('printOverlay');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+
+            // 3. Export to High Res PNG and open in exact Print Window
+            setTimeout(() => {
+                const dataUrl = a4Canvas.toDataURL({ format: 'png', multiplier: 1 });
+                
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                    <head>
+                        <title>PrintCraft A4 Document</title>
+                        <style>
+                            @page { size: A4 portrait; margin: 0; }
+                            body { margin: 0; display: flex; justify-content: center; align-items: center; background: white; }
+                            img { width: 100%; height: 100%; object-fit: contain; }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="${dataUrl}" onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+
+                // 4. Restore Grid and Hide Loader
+                if(snapActive) {
+                    gridLines.forEach(l => a4Canvas.add(l));
+                    gridLines.forEach(l => a4Canvas.sendToBack(l));
+                    a4Canvas.requestRenderAll();
+                }
+                
+                loader.classList.add('hidden'); loader.classList.remove('flex');
+            }, 500);
+        }
+
+        // Hotkeys
+        window.addEventListener('keydown', (e) => {
+            if((e.key === 'Delete' || e.key === 'Backspace') && !document.activeElement.matches('input')) {
+                deleteSelectedObject();
+            }
+        });
+
+    </script>
+</body>
+</html>

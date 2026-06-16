@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master PVC Card Studio - Print Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        body { background: #f0f4f8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .glass { background: white; border-radius: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .btn-mast { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-mast:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .card-btn.active { background-color: #16a34a; color: white; border-color: #16a34a; transform: scale(1.03); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }
+        
+        /* Strict Standard CR80 Dimensions Setup */
+        .pvc-render-box { width: 100%; aspect-ratio: 85.6 / 53.98; position: relative; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.12); background: white; border: 1.5px solid #16a34a; border-radius: 8px; }
+        .pvc-crop-preview { width: 100%; aspect-ratio: 85.6 / 53.98; background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+        .pvc-crop-preview img { width: 100%; height: 100%; object-fit: fill; }
+        
+        /* Typography Rules */
+        .farmer-text { font-family: Arial, Helvetica, sans-serif; }
+        .farmer-heading { font-family: Georgia, 'Times New Roman', Times, serif; }
+        .land-table th, .land-table td { border: 0.5px solid #4a5568; padding: 1.2px; font-size: 4px; text-align: center; font-weight: bold; }
+        
+        /* STRICT QR CODE PRINT FIX */
+        #qrcodeAutoFront { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        #qrcodeAutoFront canvas { display: none !important; } /* Hide canvas */
+        #qrcodeAutoFront img { display: block !important; width: 100% !important; height: 100% !important; object-fit: contain; } /* Force IMG for print */
+
+        #zoomTarget { transition: transform 0.2s ease-in-out; transform-origin: center top; }
+
+        @media print {
+            body { background: white; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-md z-[150] hidden flex-col items-center justify-center">
+        <i class="fa-solid fa-circle-notch fa-spin text-6xl text-green-600 mb-4"></i>
+        <h2 class="text-3xl font-black text-gray-800">Processing HD Assets...</h2>
+    </div>
+
+    <div id="zoomModal" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-start pt-12 overflow-y-auto">
+        <div class="fixed top-6 right-6 flex gap-3 z-[110] bg-white/10 p-2 rounded-full backdrop-blur-md border border-white/20">
+            <button onclick="adjustZoomFactor(0.2)" class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-full font-black text-2xl shadow-lg transition flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+            <button onclick="adjustZoomFactor(-0.2)" class="bg-amber-500 hover:bg-amber-600 text-white w-12 h-12 rounded-full font-black text-2xl shadow-lg transition flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
+            <div class="w-px bg-white/30 my-2 mx-1"></div>
+            <button onclick="exitZoomPanel()" class="bg-red-600 hover:bg-red-700 text-white w-12 h-12 rounded-full font-black text-2xl shadow-lg transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="text-white mb-6 text-sm font-black tracking-widest uppercase opacity-75">Magnified Quality Check Board</div>
+        <div class="w-[580px] max-w-[92%] pb-24">
+            <div id="zoomTarget" class="shadow-2xl mx-auto rounded-lg overflow-hidden bg-white"></div>
+        </div>
+    </div>
+
+    <header class="bg-white shadow-sm sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white px-4 py-2 rounded-full font-bold transition btn-mast">
+                <i class="fa-solid fa-arrow-left"></i> Back to Print Kiosk
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 text-xl flex items-center gap-2">
+                <i class="fa-solid fa-id-card-clip text-green-500"></i> Pro PVC Hub Studio
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+        
+        <div class="glass p-4 mb-6 border border-green-100 no-print">
+            <h3 class="text-base font-black text-green-800 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-list-check"></i> 1. Select Identity Card Type
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                <button onclick="navigateCardKiosk(this, 'aadhaar')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-address-card text-blue-500 text-base"></i> Aadhaar Card</button>
+                <button onclick="navigateCardKiosk(this, 'pan')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-regular fa-credit-card text-blue-500 text-base"></i> PAN Card</button>
+                <button onclick="navigateCardKiosk(this, 'ration')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-bowl-rice text-amber-600 text-base"></i> Ration Card</button>
+                <button onclick="navigateCardKiosk(this, 'farmer')" id="defaultFarmerBtn" class="card-btn active flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-wheat-awn text-green-200 text-base"></i> Farmer ID</button>
+                <button onclick="navigateCardKiosk(this, 'ayushman')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-heart-pulse text-red-500 text-base"></i> Ayushman</button>
+                <button onclick="navigateCardKiosk(this, 'shram')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-users text-indigo-500 text-base"></i> E-Shram Card</button>
+                <button onclick="navigateCardKiosk(this, 'dl')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-car text-gray-600 text-base"></i> Driving Licence</button>
+                <button onclick="navigateCardKiosk(this, 'abha')" class="card-btn flex flex-col items-center justify-center gap-1 bg-white border border-gray-200 p-2 rounded-xl text-xs font-bold text-gray-700 transition text-center"><i class="fa-solid fa-notes-medical text-teal-500 text-base"></i> ABHA Card</button>
+            </div>
+        </div>
+
+        <div id="systemAutoGeneratorWorkspace" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <div class="lg:col-span-6 flex flex-col no-print">
+                <div class="glass p-5 flex flex-col flex-grow bg-white border border-green-200 space-y-4">
+                    <h3 class="font-black text-green-800 text-base border-b pb-2 flex items-center gap-1.5"><i class="fa-solid fa-keyboard"></i> Farmer Details Entry Form</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200 sm:col-span-2">
+                            <label class="font-bold text-gray-700 block mb-1">Upload Farmer Photo Asset</label>
+                            <input type="file" accept="image/*" onchange="processLocalPhotoFile(event)" class="w-full text-xs text-gray-500 file:py-1 file:px-2 file:rounded file:border-0 file:bg-green-100 file:text-green-700 font-bold cursor-pointer">
+                        </div>
+
+                        <div><label class="font-bold text-gray-600 block mb-1">Name (English):</label><input type="text" id="inp-name-en" oninput="syncFarmerCardLive()" placeholder="Ramnaresh Chaudhari" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Name (Hindi):</label><input type="text" id="inp-name-hi" oninput="syncFarmerCardLive()" placeholder="रामनरेश चौधरी" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">DOB (DD/MM/YYYY):</label><input type="text" id="inp-dob" oninput="syncFarmerCardLive()" placeholder="01/01/1927" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Gender:</label><input type="text" id="inp-gender" oninput="syncFarmerCardLive()" placeholder="Male" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Age:</label><input type="text" id="inp-age" oninput="syncFarmerCardLive()" placeholder="98" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Caste Category:</label><input type="text" id="inp-caste" oninput="syncFarmerCardLive()" placeholder="General" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Mobile No:</label><input type="text" id="inp-mobile" oninput="syncFarmerCardLive()" placeholder="7070393730" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-gray-600 block mb-1">Aadhar No:</label><input type="text" id="inp-aadhar" oninput="syncFarmerCardLive()" placeholder="XXXX XXXX XXXX" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500"></div>
+                        <div><label class="font-bold text-green-700 block mb-1">Farmer ID (Front Code):</label><input type="text" id="inp-fid" oninput="syncFarmerCardLive()" placeholder="36565207294" class="w-full px-3 py-2 border-2 border-green-200 rounded-lg font-bold outline-none focus:border-green-600"></div>
+                        <div><label class="font-bold text-green-700 block mb-1">Enrollment ID (Back Code):</label><input type="text" id="inp-eid" oninput="syncFarmerCardLive()" placeholder="10_217_1284_236194_005001" class="w-full px-3 py-2 border-2 border-green-200 rounded-lg font-bold outline-none focus:border-green-600"></div>
+
+                        <div class="sm:col-span-2">
+                            <label class="font-bold text-gray-600 block mb-1">Full Address (Back Block Description):</label>
+                            <input type="text" id="inp-address" oninput="syncFarmerCardLive()" placeholder="yadu paran, ward no. 14, Kalyanpur, Samastipur, Bihar-848302" class="w-full px-3 py-2 border rounded-lg font-bold outline-none focus:border-green-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 p-3 rounded-xl border border-green-200 mt-2 text-xs">
+                        <h4 class="font-black text-green-900 mb-2 uppercase tracking-wide flex items-center gap-1"><i class="fa-solid fa-table"></i> Add Land Ownership Details Row</h4>
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <input type="text" id="t-state" placeholder="State (BIHAR)" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-dist" placeholder="District" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-sub" placeholder="Sub-Dist" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-vill" placeholder="Village" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-sno" placeholder="SNo." class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-ssno" placeholder="S/Sno" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-owner" placeholder="Owner Name" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-ident" placeholder="Identifier" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-otype" placeholder="Type (Joint)" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-share" placeholder="Share Type" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-tot" placeholder="Total Area" class="p-2 border rounded bg-white font-semibold">
+                            <input type="text" id="t-assign" placeholder="Assigned Area" class="p-2 border rounded bg-white font-semibold">
+                        </div>
+                        <button onclick="commitLandRegistryRow()" class="bg-green-600 hover:bg-green-700 text-white font-black px-4 py-2 rounded-lg transition text-xs shadow btn-mast"><i class="fa-solid fa-plus"></i> Add Row Into Table</button>
+                    </div>
+
+                    <div id="recordListBlock" class="bg-white border border-gray-300 p-3 rounded-xl mt-2 hidden shadow-sm">
+                        <h4 class="font-black text-indigo-700 text-xs uppercase mb-2 tracking-wide border-b pb-1"><i class="fa-solid fa-list-ol"></i> Added Land Records List (Serial Wise)</h4>
+                        <div id="liveRowsSerialContainer" class="space-y-2 max-h-[150px] overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-6 glass p-5 flex flex-col space-y-4 bg-white relative">
+                <h3 class="text-base font-black text-gray-800 border-b pb-2 no-print"><i class="fa-solid fa-eye text-orange-500"></i> Live HD Premium Preview</h3>
+
+                <div class="relative">
+                    <div class="flex justify-between items-center mb-1 no-print">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Front Layout View</span>
+                        <button onclick="triggerZoomPortal('boxFrontAuto')" class="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white px-2.5 py-1 rounded transition font-bold"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom Card View</button>
+                    </div>
+                    <div id="boxFrontAutoWrap" class="pvc-render-box bg-white">
+                        <div id="boxFrontAuto" class="w-full h-full bg-white relative flex flex-col overflow-hidden farmer-text border border-gray-200">
+                            <div class="w-full h-[24%] bg-gradient-to-r from-[#0a3118] via-[#105c2a] to-[#0a3118] flex justify-between items-center px-3 py-1 border-b-[1.5px] border-yellow-400 relative">
+                                <div class="absolute inset-0 flex justify-center items-center opacity-10 pointer-events-none"><i class="fa-solid fa-wheat-awn text-5xl text-white"></i></div>
+                                <div class="text-white text-[4.5px] w-[14%] text-center leading-tight z-10 font-bold"><i class="fa-solid fa-seedling text-[#4ade80] text-xs"></i><br><span class="text-yellow-400 font-bold text-[5px]">2026</span><br>International Year<br>of Cooperatives</div>
+                                <div class="text-center w-[72%] leading-none z-10 pt-0.5">
+                                    <span class="text-[#5ced73] font-black text-2xl italic tracking-wider filter drop-shadow-md" style="font-family: 'Georgia', serif; -webkit-text-stroke: 0.3px #000;">Agri Stack</span>
+                                    <span class="text-white font-black text-[14px] ml-2 tracking-wide" style="text-shadow: 1px 1px 2px #000;">फार्मर आईडी कार्ड</span><br>
+                                    <span class="text-yellow-300 font-bold text-[10px] tracking-widest block mt-0.5">(Farmer ID Card)</span>
+                                </div>
+                                <div class="w-[14%] flex justify-end z-10 text-white opacity-85 text-xl"><i class="fa-solid fa-circle-user"></i></div>
+                            </div>
+                            <div class="w-full h-[60%] flex px-3 py-1.5 relative z-10 bg-white items-center">
+                                <div class="absolute inset-0 flex justify-center items-center opacity-[0.03] pointer-events-none"><i class="fa-solid fa-tractor text-[80px]"></i></div>
+                                <div class="w-[23%] flex justify-center h-full items-center z-10 mt-[2px]">
+                                    <div class="w-full aspect-[3/3.5] border-[1.5px] border-[#16a34a] bg-gray-50 flex items-center justify-center p-[1px] shadow-sm rounded-sm overflow-hidden">
+                                        <img id="f-photo" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover object-top">
+                                    </div>
+                                </div>
+                                <div class="w-[55%] pl-3 flex flex-col leading-[1.3] text-black z-10 mt-[-2px]">
+                                    <div id="f-name-en" class="text-[#0f4323] text-[14.5px] font-black tracking-wide farmer-heading mb-[0.5px]">Ramnaresh Chaudhari</div>
+                                    <div id="f-name-hi" class="text-[#0f4323] text-[14.5px] font-black tracking-wide farmer-heading mb-[3px]">रामनरेश चौधरी</div>
+                                    <div class="text-[8px] font-bold text-gray-800 tracking-wide flex flex-col">
+                                        <div class="mb-[0.5px]">DOB : <span id="f-dob" class="font-semibold text-gray-700">01/01/1927</span></div>
+                                        <div class="mb-[0.5px]">Gender : <span id="f-gender" class="font-semibold text-gray-700">Male</span></div>
+                                        <div class="mb-[0.5px]">Age : <span id="f-age" class="font-semibold text-gray-700">98</span></div>
+                                        <div class="mb-[0.5px]">Caste Category : <span id="f-caste" class="font-semibold text-gray-700">General</span></div>
+                                        <div class="mb-[0.5px]">Mobile No. : <span id="f-mobile" class="font-semibold text-gray-700">7070393730</span></div>
+                                        <div>Aadhar No. : <span id="f-aadhar" class="font-semibold text-gray-700">XXXX XXXX XXXX</span></div>
+                                    </div>
+                                </div>
+                                <div class="w-[22%] flex justify-end z-10">
+                                    <div class="p-0.5 border border-gray-300 bg-white shadow-sm flex items-center justify-center w-[52px] h-[52px] overflow-hidden">
+                                        <div id="qrcodeAutoFront"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-full h-[16%] bg-gradient-to-r from-[#0b381b] to-[#115e2a] flex justify-center items-center px-2 relative z-10 shadow-inner border-t-[1px] border-yellow-400">
+                                <div class="absolute left-[-2px] bottom-[-2px] text-[#39b54a] text-3xl opacity-80" style="transform: rotate(45deg);"><i class="fa-brands fa-pagelines"></i></div>
+                                <div class="w-full text-center text-[#4ade80] font-black text-[15.5px] tracking-widest drop-shadow-md" style="font-family: 'Arial Black', sans-serif;">
+                                    Farmer ID : <span id="f-fid" class="text-white">36565207294</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <div class="flex justify-between items-center mb-1 no-print">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block">Back Layout View</span>
+                        <button onclick="triggerZoomPortal('boxBackAuto')" class="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white px-2.5 py-1 rounded transition font-bold"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom Card View</button>
+                    </div>
+                    <div id="boxBackAutoWrap" class="pvc-render-box bg-white">
+                        <div id="boxBackAuto" class="w-full h-full bg-white relative flex flex-col overflow-hidden farmer-text border border-gray-200">
+                            <div class="w-full h-[18%] bg-[#0f4323] flex flex-col justify-center items-center text-white pb-[1px] border-b border-yellow-400">
+                                <div class="font-bold text-[8.5px] opacity-90 leading-tight">Farmer Enrollment Id</div>
+                                <div id="f-eid" class="text-[#39b54a] font-black text-[14px] tracking-widest" style="font-family: 'Arial Black', sans-serif;">10_217_1284_236194_005001</div>
+                            </div>
+                            <div class="px-2 py-[2px] text-[7px] font-bold text-[#0f4323] border-b border-gray-200 bg-gray-50/50">
+                                Address .: <span id="f-address" class="text-gray-800 font-medium">yadu paran, ward no. 14, Kalyanpur, Samastipur, Bihar-848302</span>
+                            </div>
+                            <div class="px-2 pt-1 flex-grow flex flex-col overflow-hidden bg-white">
+                                <div class="text-[#0f4323] font-black text-[8px] mb-[1px]">Land Ownership Details</div>
+                                <table class="w-full text-[4px] border-collapse land-table text-center leading-tight bg-white">
+                                    <thead><tr class="text-gray-800 bg-gray-100 font-bold"><th>State</th><th>District</th><th>Sub-Dist</th><th>Village</th><th>SNo.</th><th>S/Sno</th><th>Owner Name</th><th>Identifier</th><th>Type</th><th>Share Type</th><th>Total Area</th><th>Assigned</th></tr></thead>
+                                    <tbody id="f-table-body"><tr class="font-medium text-gray-800"><td>BIHAR</td><td>SAMASTIPUR</td><td>Kalyanpur</td><td>Jadu Paran</td><td>215</td><td>*</td><td>राम नरेश चौधरी</td><td>परीक्षण चौधरी</td><td>Joint</td><td>Equal Share</td><td>1.3333E-6</td><td>0.000001</td></tr></tbody>
+                                </table>
+                            </div>
+                            <div class="px-2 text-center relative z-10 pb-0.5 mt-auto bg-gray-50/30 border-t border-gray-100">
+                                <div class="font-black text-[7px] text-gray-800">Annexure</div>
+                                <div class="text-[3.5px] leading-tight text-gray-500 text-justify mb-[1px] px-4 font-medium">I also give my consent to State and Central Governments to use my aadhaar, my identity information and my data available into Pradhan Mantri Kisan SammanNidhi...</div>
+                                <div class="absolute left-[-2px] bottom-1 text-[#39b54a] text-xl opacity-80" style="transform: rotate(45deg);"><i class="fa-brands fa-pagelines"></i></div><div class="absolute right-1 bottom-0 text-orange-500 text-xl opacity-90"><i class="fa-solid fa-person-digging"></i></div>
+                            </div>
+                            <div class="w-full h-[5%] bg-[#0f4323] text-white text-center flex items-center justify-center text-[4.5px] font-bold z-10">This Card is For Personal Use Only And is not a government-issued identity.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t space-y-3 no-print">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="triggerCanvasDownload('image')" class="bg-gray-800 hover:bg-black text-white font-bold py-3 rounded-xl btn-mast text-sm flex justify-center items-center gap-1.5"><i class="fa-regular fa-image"></i> Save HD JPG</button>
+                        <button onclick="triggerCanvasDownload('pdf')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl btn-mast text-sm flex justify-center items-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> Save HD PDF</button>
+                    </div>
+                    <button onclick="triggerDirectPvcCardPrint()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-lg btn-mast flex justify-center items-center gap-2 border-b-4 border-red-700">
+                        <i class="fa-solid fa-print"></i> Direct Print PVC Card
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="classicManualCropWorkspace" class="grid grid-cols-1 lg:grid-cols-12 gap-6 hidden no-print">
+            <div class="lg:col-span-8 glass p-6 flex flex-col min-h-[500px]">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-black text-blue-800"><i class="fa-solid fa-crop mr-1"></i> Step 2: Manual Upload & Crop</h3>
+                    <button id="resetCropBtn" onclick="triggerManualCropperReset()" class="hidden text-sm bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl font-bold transition"><i class="fa-solid fa-rotate-left mr-1"></i> Clear Upload</button>
+                </div>
+                <div id="uploadBox" class="flex-grow border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer relative transition h-[400px]">
+                    <input type="file" accept="image/*,application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="initializeManualCropEngine(event)">
+                    <i class="fa-regular fa-file-pdf text-6xl text-blue-400 mb-3"></i>
+                    <h4 class="text-2xl font-black text-blue-800">Upload Card (PDF/Image)</h4>
+                </div>
+                <div id="cropperBoxBlock" class="hidden flex-col h-[400px]">
+                    <div class="w-full aspect-[85.6/54] relative shadow-inner flex justify-center bg-gray-100 rounded-lg overflow-hidden"><img id="imageToCropManual" src="" class="max-w-full"></div>
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <button onclick="captureManualCroppedSide('front')" class="bg-blue-600 text-white font-black py-3 rounded-xl shadow btn-mast">Capture FRONT Side</button>
+                        <button onclick="captureManualCroppedSide('back')" class="bg-teal-600 text-white font-black py-3 rounded-xl shadow btn-mast">Capture BACK Side</button>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-4 glass p-6 flex flex-col space-y-6">
+                <h3 class="text-lg font-black text-gray-800 border-b pb-2"><i class="fa-solid fa-print"></i> PVC Crop Board Preview</h3>
+                <div><span class="text-xs font-bold text-gray-500 uppercase">Front Segment</span><div id="frontCropPreviewDiv" class="pvc-crop-preview"><span class="text-gray-400 font-bold">Front Content Pending</span></div></div>
+                <div><span class="text-xs font-bold text-gray-400 uppercase">Back Segment</span><div id="backCropPreviewDiv" class="pvc-crop-preview"><span class="text-gray-400 font-bold">Back Content Pending</span></div></div>
+                <div class="flex-grow flex flex-col justify-end space-y-3 pt-2">
+                    <button onclick="executeManualCropExport('pdf')" class="bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg btn-mast"><i class="fa-solid fa-file-pdf"></i> Save Crop PDF</button>
+                    <button onclick="executeManualCropExport('print')" class="bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg border-b-4 border-orange-700 btn-mast"><i class="fa-solid fa-print"></i> Direct Print Crops</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function navigateCardKiosk(btn, cardType) {
+            document.querySelectorAll('.card-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const autoSection = document.getElementById('systemAutoGeneratorWorkspace');
+            const cropSection = document.getElementById('classicManualCropWorkspace');
+            if(cardType === 'farmer') { autoSection.classList.remove('hidden'); cropSection.classList.add('hidden'); } 
+            else { autoSection.classList.add('hidden'); cropSection.classList.remove('hidden'); }
+        }
+
+        let globalScaleFactor = 1.0;
+        function triggerZoomPortal(elementId) {
+            const innerHTMLAsset = document.getElementById(elementId).innerHTML;
+            const targetBlock = document.getElementById('zoomTarget');
+            targetBlock.innerHTML = `<div class="pvc-render-box" style="width: 540px !important;">${innerHTMLAsset}</div>`;
+            document.getElementById('zoomModal').classList.replace('hidden', 'flex');
+            globalScaleFactor = 1.0; applyViewportScaleTransform();
+        }
+        function adjustZoomFactor(value) { globalScaleFactor = Math.max(0.6, Math.min(2.4, globalScaleFactor + value)); applyViewportScaleTransform(); }
+        function applyViewportScaleTransform() { document.getElementById('zoomTarget').style.transform = `scale(${globalScaleFactor})`; }
+        function exitZoomPanel() { document.getElementById('zoomModal').classList.replace('flex', 'hidden'); }
+
+        let landRegistryRowsDatabase = [];
+        function processLocalPhotoFile(event) {
+            const file = event.target.files[0];
+            if(file) { const reader = new FileReader(); reader.onload = function(e) { document.getElementById('f-photo').src = e.target.result; }; reader.readAsDataURL(file); }
+        }
+        function commitLandRegistryRow() {
+            const stateField = document.getElementById('t-state').value.trim();
+            if(!stateField) return alert("Pehle table mein State ka naam bhariye!");
+            const record = {
+                state: stateField.toUpperCase(), dist: document.getElementById('t-dist').value.trim().toUpperCase() || '-', sub: document.getElementById('t-sub').value.trim() || '-',
+                vill: document.getElementById('t-vill').value.trim() || '-', sno: document.getElementById('t-sno').value.trim() || '-', ssno: document.getElementById('t-ssno').value.trim() || '-',
+                owner: document.getElementById('t-owner').value.trim() || '-', ident: document.getElementById('t-ident').value.trim() || '-', otype: document.getElementById('t-otype').value.trim() || '-',
+                share: document.getElementById('t-share').value.trim() || '-', tot: document.getElementById('t-tot').value.trim() || '-', assign: document.getElementById('t-assign').value.trim() || '-'
+            };
+            landRegistryRowsDatabase.push(record);
+            ['t-state', 't-dist', 't-sub', 't-vill', 't-sno', 't-ssno', 't-owner', 't-ident', 't-otype', 't-share', 't-tot', 't-assign'].forEach(id => document.getElementById(id).value = '');
+            syncFarmerCardLive();
+        }
+        function editRegistryRowItem(index) {
+            const targetAsset = landRegistryRowsDatabase[index];
+            document.getElementById('t-state').value = targetAsset.state; document.getElementById('t-dist').value = targetAsset.dist; document.getElementById('t-sub').value = targetAsset.sub;
+            document.getElementById('t-vill').value = targetAsset.vill; document.getElementById('t-sno').value = targetAsset.sno; document.getElementById('t-ssno').value = targetAsset.ssno;
+            document.getElementById('t-owner').value = targetAsset.owner; document.getElementById('t-ident').value = targetAsset.ident; document.getElementById('t-otype').value = targetAsset.otype;
+            document.getElementById('t-share').value = targetAsset.share; document.getElementById('t-tot').value = targetAsset.tot; document.getElementById('t-assign').value = targetAsset.assign;
+            landRegistryRowsDatabase.splice(index, 1); syncFarmerCardLive(); document.getElementById('t-state').focus();
+        }
+        function deleteRegistryRowItem(index) { if(confirm("Kya aap sach mein is entry ko hatana chahte hain?")) { landRegistryRowsDatabase.splice(index, 1); syncFarmerCardLive(); } }
+        function refreshSerialRegistryListUI() {
+            const block = document.getElementById('recordListBlock'); const container = document.getElementById('liveRowsSerialContainer');
+            if(landRegistryRowsDatabase.length === 0) { block.classList.add('hidden'); return; }
+            block.classList.remove('hidden'); container.innerHTML = "";
+            landRegistryRowsDatabase.forEach((r, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-white border border-gray-200 p-2 rounded-lg shadow-sm text-xs font-bold text-gray-700">
+                        <div class="flex-1 truncate"><span class="bg-green-600 text-white rounded px-2 py-0.5 text-[10px] mr-2">${idx + 1}</span><span>Owner: ${r.owner} | Vill: ${r.vill} | SNo: ${r.sno}</span></div>
+                        <div class="flex gap-2 ml-2 flex-shrink-0">
+                            <button onclick="editRegistryRowItem(${idx})" class="bg-indigo-50 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded font-bold text-[11px] transition shadow-sm"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                            <button onclick="deleteRegistryRowItem(${idx})" class="bg-red-50 border border-red-200 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded font-bold text-[11px] transition shadow-sm"><i class="fa-solid fa-trash-can"></i> Delete</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // ========================== FIXED QR CODE ENGINE & SYNCHRONIZATION ==========================
+        let qrCodeInstance = null; // Store globally to prevent duplicates/crashing
+
+        function syncFarmerCardLive() {
+            const nameEn = document.getElementById('inp-name-en').value.trim() || "Ramnaresh Chaudhari";
+            const nameHi = document.getElementById('inp-name-hi').value.trim() || "रामनरेश चौधरी";
+            const dob = document.getElementById('inp-dob').value.trim() || "01/01/1927";
+            const gender = document.getElementById('inp-gender').value.trim() || "Male";
+            const age = document.getElementById('inp-age').value.trim() || "98";
+            const caste = document.getElementById('inp-caste').value.trim() || "General";
+            const mobile = document.getElementById('inp-mobile').value.trim() || "7070393730";
+            const aadhar = document.getElementById('inp-aadhar').value.trim() || "XXXX XXXX XXXX";
+            const fid = document.getElementById('inp-fid').value.trim() || "36565207294";
+            const eid = document.getElementById('inp-eid').value.trim() || "10_217_1284_236194_005001";
+            const address = document.getElementById('inp-address').value.trim() || "yadu paran, ward no. 14, Kalyanpur, Samastipur, Bihar-848302";
+
+            document.getElementById('f-name-en').innerText = nameEn; document.getElementById('f-name-hi').innerText = nameHi;
+            document.getElementById('f-dob').innerText = dob; document.getElementById('f-gender').innerText = gender;
+            document.getElementById('f-age').innerText = age; document.getElementById('f-caste').innerText = caste;
+            document.getElementById('f-mobile').innerText = mobile; document.getElementById('f-aadhar').innerText = aadhar;
+            document.getElementById('f-fid').innerText = fid; document.getElementById('f-eid').innerText = eid;
+            document.getElementById('f-address').innerText = address;
+
+            let htmlStr = '';
+            landRegistryRowsDatabase.forEach(r => { htmlStr += `<tr class="font-bold text-gray-800"><td>${r.state}</td><td>${r.dist}</td><td>${r.sub}</td><td>${r.vill}</td><td>${r.sno}</td><td>${r.ssno}</td><td>${r.owner}</td><td>${r.ident}</td><td>${r.otype}</td><td>${r.share}</td><td>${r.tot}</td><td>${r.assign}</td></tr>`; });
+            if(landRegistryRowsDatabase.length === 0) { htmlStr = `<tr class="font-bold text-gray-800"><td>BIHAR</td><td>SAMASTIPUR</td><td>Kalyanpur</td><td>Jadu Paran</td><td>215</td><td>*</td><td>राम नरेश चौधरी</td><td>परीक्षण चौधरी</td><td>Joint</td><td>Equal Share</td><td>1.3333E-6</td><td>0.000001</td></tr>`; }
+            document.getElementById('f-table-body').innerHTML = htmlStr;
+            refreshSerialRegistryListUI();
+
+            // FIXED QR CODE REGENERATION (Forces clear Image Canvas Render strictly for printing)
+            // Storing token text in a stable format for generic scan readability.
+            let tokenStringData = `Name: ${nameEn}\nID: ${fid}\nDOB: ${dob}\nMob: ${mobile}`;
+            
+            let qrContainer = document.getElementById('qrcodeAutoFront');
+            qrContainer.innerHTML = ""; // Clear existing
+            
+            try {
+                qrCodeInstance = new QRCode(qrContainer, {
+                    text: tokenStringData,
+                    width: 120, // Internal resolution high
+                    height: 120,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+                
+                // Hack to force images immediately rendering for robust print stability
+                setTimeout(() => {
+                    let canvas = qrContainer.querySelector('canvas');
+                    let img = qrContainer.querySelector('img');
+                    if(canvas && img) {
+                        img.src = canvas.toDataURL("image/png");
+                        img.style.display = "block";
+                        canvas.style.display = "none";
+                    }
+                }, 50);
+            } catch(e) { console.error(e); }
+        }
+
+        async function captureHDCanvasFromDOM(elementId) {
+            await new Promise(r => setTimeout(r, 200)); 
+            return await html2canvas(document.getElementById(elementId), { scale: 3.5, useCORS: true, backgroundColor: "#ffffff" });
+        }
+
+        async function triggerCanvasDownload(formatType) {
+            const loader = document.getElementById('loadingOverlay'); loader.classList.replace('hidden', 'flex');
+            try {
+                syncFarmerCardLive();
+                const frontCanvasAsset = await captureHDCanvasFromDOM('boxFrontAuto');
+                const backCanvasAsset = await captureHDCanvasFromDOM('boxBackAuto');
+
+                if(formatType === 'image') {
+                    const finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = Math.max(frontCanvasAsset.width, backCanvasAsset.width); finalCanvas.height = frontCanvasAsset.height + backCanvasAsset.height + 60;
+                    const context = finalCanvas.getContext('2d'); context.fillStyle = "#ffffff"; context.fillRect(0,0, finalCanvas.width, finalCanvas.height);
+                    context.drawImage(frontCanvasAsset, 0, 0); context.drawImage(backCanvasAsset, 0, frontCanvasAsset.height + 60);
+                    const anchor = document.createElement('a'); anchor.href = finalCanvas.toDataURL('image/jpeg', 1.0); anchor.download = "Farmer_PVC_Card_HD.jpg"; anchor.click();
+                } else {
+                    const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                    doc.addImage(frontCanvasAsset.toDataURL('image/jpeg', 1.0), 'JPEG', 60, 20, 85.6, 53.98); doc.setDrawColor(210); doc.rect(60, 20, 85.6, 53.98);
+                    doc.addImage(backCanvasAsset.toDataURL('image/jpeg', 1.0), 'JPEG', 60, 85, 85.6, 53.98); doc.rect(60, 85, 85.6, 53.98); doc.save("Farmer_PVC_Card_A4.pdf");
+                }
+            } catch(err) { alert("Error rendering canvas engines."); } finally { loader.classList.replace('flex', 'hidden'); }
+        }
+
+        function triggerDirectPvcCardPrint() {
+            syncFarmerCardLive();
+            const frontHTML = document.getElementById('boxFrontAutoWrap').innerHTML; const backHTML = document.getElementById('boxBackAutoWrap').innerHTML;
+            const targetWindow = window.open('', '_blank');
+            targetWindow.document.write(`
+                <html>
+                <head>
+                    <title>PVC Card Print Task</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>
+                        @page { size: A4 portrait; margin: 10mm; }
+                        body { margin: 0; padding: 15mm 0; display: flex; flex-direction: column; align-items: center; gap: 15mm; background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                        .pvc-card { width: 85.6mm; height: 53.98mm; border: none; overflow: hidden; position: relative; border-radius: 2mm; box-shadow: 0 0 0 1px #cbd5e1; }
+                        .pvc-render-box { width: 100%; height: 100%; }
+                        .farmer-text { font-family: Arial, sans-serif; }
+                        .farmer-heading { font-family: Georgia, serif; }
+                        .land-table th, .land-table td { border: 0.5px solid #4a5568; padding: 1.5px; font-size: 4px; text-align: center; }
+                        /* Strict QR Print fixes */
+                        #qrcodeAutoFront canvas { display: none !important; }
+                        #qrcodeAutoFront img { display: block !important; width: 100% !important; height: 100% !important; object-fit: contain; }
+                        .h-\\[24\\%\\] { height: 24% !important; } .h-\\[60\\%\\] { height: 60% !important; } .h-\\[16\\%\\] { height: 16% !important; } .h-\\[18\\%\\] { height: 18% !important; }
+                    </style>
+                </head>
+                <body>
+                    <div class="pvc-card">${frontHTML}</div><div class="pvc-card">${backHTML}</div>
+                    <script>window.onload = function() { setTimeout(function(){ window.print(); window.close(); }, 750); }<\/script>
+                </body>
+                </html>`); targetWindow.document.close();
+        }
+
+        // ========================== MANUAL HOVER CROP CODE LAYER FOR OTHER ITEMS ==========================
+        let manualCropperInstance = null; let base64FrontCrop = null; let base64BackCrop = null;
+        function initializeManualCropEngine(event) {
+            const file = event.target.files[0]; if (!file) return;
+            if (file.type === 'application/pdf') {
+                document.getElementById('loadingOverlay').classList.replace('hidden', 'flex');
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    const typedarray = new Uint8Array(this.result); const pdf = await pdfjsLib.getDocument(typedarray).promise; const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({scale: 3.0}); const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height; canvas.width = viewport.width; await page.render({canvasContext: ctx, viewport: viewport}).promise;
+                    bootCropperInstance(canvas.toDataURL('image/jpeg', 1.0)); document.getElementById('loadingOverlay').classList.replace('flex', 'hidden');
+                }; reader.readAsArrayBuffer(file);
+            } else { const reader = new FileReader(); reader.onload = function(e) { bootCropperInstance(e.target.result); }; reader.readAsDataURL(file); }
+        }
+        function bootCropperInstance(src) {
+            const img = document.getElementById('imageToCropManual'); img.src = src; document.getElementById('uploadBox').classList.add('hidden'); document.getElementById('cropperBoxBlock').classList.replace('hidden', 'flex'); document.getElementById('resetCropBtn').classList.remove('hidden');
+            if(manualCropperInstance) manualCropperInstance.destroy(); manualCropperInstance = new Cropper(img, { aspectRatio: 85.6 / 53.98, viewMode: 1, autoCropArea: 0.6, dragMode: 'move' });
+        }
+        function triggerManualCropperReset() {
+            if(manualCropperInstance) { manualCropperInstance.destroy(); manualCropperInstance = null; } document.querySelector('#classicManualCropWorkspace input[type="file"]').value = "";
+            document.getElementById('cropperBoxBlock').classList.replace('flex', 'hidden'); document.getElementById('resetCropBtn').classList.add('hidden'); document.getElementById('uploadBox').classList.remove('hidden'); clearCropSide('front'); clearCropSide('back');
+        }
+        function captureManualCroppedSide(side) {
+            if(!manualCropperInstance) return alert("Pehle upload karein!"); const cv = manualCropperInstance.getCroppedCanvas({ width: 1011, height: 638 });
+            if(side === 'front') { base64FrontCrop = cv.toDataURL('image/jpeg', 1.0); document.getElementById('frontCropPreviewDiv').innerHTML = `<img src="${base64FrontCrop}">`; manualCropperInstance.move(0, 110); } else { base64BackCrop = cv.toDataURL('image/jpeg', 1.0); document.getElementById('backCropPreviewDiv').innerHTML = `<img src="${base64BackCrop}">`; }
+        }
+        function executeManualCropExport(type) {
+            if(!base64FrontCrop && !base64BackCrop) return alert("Kam se kam ek side zaroor crop karein!");
+            if(type === 'pdf') {
+                const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+                if(base64FrontCrop) { doc.addImage(base64FrontCrop, 'JPEG', 60, 20, 85.6, 53.98); doc.setDrawColor(200); doc.rect(60, 20, 85.6, 53.98); }
+                if(base64BackCrop) { doc.addImage(base64BackCrop, 'JPEG', 60, 85, 85.6, 53.98); doc.setDrawColor(200); doc.rect(60, 85, 85.6, 53.98); } doc.save("Manual_Cropped_PVC_Card.pdf");
+            } else {
+                const printWindow = window.open('', '_blank'); printWindow.document.write(`<html><head><title>Print Crop</title><style>@page{size:A4 portrait;margin:0;} body{margin:0;padding:20mm 0;display:flex;flex-direction:column;align-items:center;gap:12mm;} .pvc-card{width:85.6mm;height:53.98mm;border:1px dashed #ccc;} .pvc-card img{width:100%;height:100%;object-fit:fill;}</style></head><body>`);
+                if(base64FrontCrop) printWindow.document.write(`<div class="pvc-card"><img src="${base64FrontCrop}"></div>`); if(base64BackCrop) printWindow.document.write(`<div class="pvc-card"><img src="${base64BackCrop}"></div>`);
+                printWindow.document.write(`<script>window.onload=function(){setTimeout(function(){window.print();window.close();},600);}<\/script></body></html>`); printWindow.document.close();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => { syncFarmerCardLive(); });
+    </script>
+</body>
+</html>

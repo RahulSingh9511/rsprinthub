@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Photo Resizer & Converter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background: #f4f7fb; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass { background: white; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+        .btn-mast { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-mast:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .img-container { max-height: 400px; width: 100%; display: flex; justify-content: center; align-items: center; background: #e2e8f0; border-radius: 1rem; overflow: hidden; background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); }
+        
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked { right: 0; border-color: #4f46e5; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #4f46e5; }
+        .toggle-checkbox { right: 4; z-index: 1; border-color: #e2e8f0; transition: all 0.3s; }
+        .toggle-label { width: 3rem; height: 1.5rem; background-color: #cbd5e1; border-radius: 9999px; transition: all 0.3s; }
+        
+        /* Format Button Active State */
+        .format-btn.active { background-color: #8b5cf6; color: white; border-color: #8b5cf6; transform: scale(1.05); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col relative">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-md z-[100] hidden flex-col items-center justify-center">
+        <i class="fa-solid fa-gears fa-spin text-6xl text-indigo-600 mb-4"></i>
+        <h2 class="text-3xl font-black text-gray-800">Converting Format...</h2>
+        <p class="text-gray-500 font-bold mt-2">Applying magic and compressing file size</p>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white px-4 py-2 rounded-full font-bold transition btn-mast">
+                <i class="fa-solid fa-arrow-left"></i> Back to Home
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-500 text-xl">
+                <i class="fa-solid fa-compress text-indigo-500"></i> Pro Resize & Convert
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT AREA: Upload & Preview -->
+            <div class="lg:col-span-7 glass p-6 flex flex-col min-h-[550px]">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="text-xl font-black text-indigo-800"><i class="fa-regular fa-image mr-1"></i> Preview Board</h3>
+                    <button id="resetBtn" onclick="resetUpload()" class="hidden text-sm bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl font-bold transition">
+                        <i class="fa-solid fa-trash mr-1"></i> Clear Photo
+                    </button>
+                </div>
+                
+                <!-- Upload Box -->
+                <div id="uploadBox" class="flex-grow border-2 border-dashed border-indigo-300 bg-indigo-50 hover:bg-indigo-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer relative transition h-[400px]">
+                    <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="initUpload(event)">
+                    <i class="fa-solid fa-cloud-arrow-up text-6xl text-indigo-400 mb-3"></i>
+                    <h4 class="text-2xl font-black text-indigo-800">Upload Image</h4>
+                    <p class="text-sm text-indigo-600 mt-1 font-bold">Supports All Major Image Formats</p>
+                </div>
+
+                <!-- Live Preview Area -->
+                <div id="previewBox" class="hidden flex-col">
+                    <div class="img-container relative shadow-inner">
+                        <img id="imagePreview" src="" class="max-w-full max-h-full object-contain">
+                    </div>
+                    
+                    <!-- Real-time Status Details -->
+                    <div class="mt-4 grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Original Status</p>
+                            <p class="font-black text-gray-800" id="origDim">0 x 0 px</p>
+                            <p class="text-sm text-indigo-600 font-bold" id="origSize">0 KB</p>
+                        </div>
+                        <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200 shadow-sm">
+                            <p class="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">New Target Status</p>
+                            <p class="font-black text-indigo-800" id="newDim">0 x 0 px</p>
+                            <p class="text-sm text-green-600 font-bold" id="newSizeStatus">Ready to process</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT AREA: Dimensions, Compress & Export -->
+            <div class="lg:col-span-5 glass p-6 flex flex-col space-y-5 opacity-50 pointer-events-none transition-opacity duration-300" id="controlPanel">
+                
+                <!-- 1. Pixel Resizer -->
+                <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+                    <div class="flex justify-between items-center border-b pb-2 mb-3">
+                        <h3 class="text-lg font-black text-indigo-800 flex items-center gap-2">
+                            <i class="fa-solid fa-ruler-combined"></i> Resize Dimensions
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-gray-500" title="Lock Aspect Ratio"><i class="fa-solid fa-link"></i> Lock Ratio</span>
+                            <div class="relative inline-block w-10 align-middle select-none">
+                                <input type="checkbox" id="lockRatio" checked onchange="toggleRatio()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                                <label for="lockRatio" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-600">Width (px)</label>
+                            <input type="number" id="inputW" oninput="updateW()" class="w-full bg-white px-3 py-2 rounded-xl border border-gray-300 font-black text-lg text-indigo-700 outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="mt-4 text-gray-400 font-bold text-xl"><i class="fa-solid fa-xmark"></i></div>
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-600">Height (px)</label>
+                            <input type="number" id="inputH" oninput="updateH()" class="w-full bg-white px-3 py-2 rounded-xl border border-gray-300 font-black text-lg text-indigo-700 outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2 mt-3">
+                        <button onclick="applyPercent(25)" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white font-bold py-1.5 rounded-lg text-xs transition">25%</button>
+                        <button onclick="applyPercent(50)" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white font-bold py-1.5 rounded-lg text-xs transition">50%</button>
+                        <button onclick="applyPercent(75)" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white font-bold py-1.5 rounded-lg text-xs transition">75%</button>
+                        <button onclick="applyPercent(100)" class="bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold py-1.5 rounded-lg text-xs transition">Reset</button>
+                    </div>
+                </div>
+
+                <!-- 2. Target File Size (Compressor) -->
+                <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                    <h3 class="text-lg font-black mb-2 text-emerald-800 flex items-center gap-2 border-b border-emerald-200 pb-2">
+                        <i class="fa-solid fa-weight-scale"></i> Compress File Size
+                    </h3>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-emerald-700">Target Size (Optional)</label>
+                            <input type="number" id="targetKB" placeholder="e.g. 50" class="w-full bg-white px-3 py-2 rounded-xl border border-emerald-300 font-black text-lg text-emerald-700 outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="mt-4 text-emerald-600 font-black text-xl">KB</div>
+                    </div>
+                </div>
+
+                <!-- 3. NAYA OPTION: UNIVERSAL IMAGE CONVERTER -->
+                <div class="bg-purple-50 border border-purple-200 p-4 rounded-2xl">
+                    <h3 class="text-lg font-black mb-3 text-purple-800 flex items-center gap-2 border-b border-purple-200 pb-2">
+                        <i class="fa-solid fa-file-export"></i> Image Converter
+                    </h3>
+                    
+                    <!-- Serial se sab file ka name wala Grid -->
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setFormat(this, 'jpeg')" class="format-btn active px-2 py-2 rounded-xl border-2 border-purple-500 bg-purple-500 text-white font-bold text-sm transition">JPG</button>
+                        <button onclick="setFormat(this, 'png')" class="format-btn px-2 py-2 rounded-xl border-2 border-gray-300 text-gray-700 bg-white font-bold text-sm transition hover:border-purple-400">PNG</button>
+                        <button onclick="setFormat(this, 'webp')" class="format-btn px-2 py-2 rounded-xl border-2 border-gray-300 text-gray-700 bg-white font-bold text-sm transition hover:border-purple-400">WEBP</button>
+                        <button onclick="setFormat(this, 'gif')" class="format-btn px-2 py-2 rounded-xl border-2 border-gray-300 text-gray-700 bg-white font-bold text-sm transition hover:border-purple-400">GIF</button>
+                        <button onclick="setFormat(this, 'bmp')" class="format-btn px-2 py-2 rounded-xl border-2 border-gray-300 text-gray-700 bg-white font-bold text-sm transition hover:border-purple-400">BMP</button>
+                        <button onclick="setFormat(this, 'avif')" class="format-btn px-2 py-2 rounded-xl border-2 border-gray-300 text-gray-700 bg-white font-bold text-sm transition hover:border-purple-400">AVIF</button>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-2">
+                    <button onclick="processAndDownload()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/30 btn-mast flex justify-center items-center gap-3 text-xl">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Convert & Download
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-white py-4 mt-auto text-center">
+        <p class="text-sm text-gray-400 font-medium">Smart Digital Tool Engine &copy; 2026 Rahul Singh Print Hub.</p>
+    </footer>
+
+    <!-- ENGINE JAVASCRIPT CODE -->
+    <script>
+        let originalImage = new Image();
+        let origW = 0, origH = 0, origRatio = 1;
+        let origSizeStr = "";
+        let currentFormat = 'jpeg'; // Default format
+
+        // 1. Format Selection UI logic
+        function setFormat(btn, formatName) {
+            document.querySelectorAll('.format-btn').forEach(b => {
+                b.classList.remove('active', 'bg-purple-500', 'text-white', 'border-purple-500');
+                b.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+            });
+            btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+            btn.classList.add('active', 'bg-purple-500', 'text-white', 'border-purple-500');
+            
+            currentFormat = formatName;
+        }
+
+        // 2. Upload & Analyze Image
+        function initUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            origSizeStr = formatBytes(file.size);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                originalImage.onload = function() {
+                    origW = originalImage.width;
+                    origH = originalImage.height;
+                    origRatio = origW / origH;
+
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('origDim').innerText = `${origW} x ${origH} px`;
+                    document.getElementById('origSize').innerText = origSizeStr;
+                    
+                    document.getElementById('inputW').value = origW;
+                    document.getElementById('inputH').value = origH;
+                    updateNewDimDisplay();
+
+                    document.getElementById('uploadBox').classList.replace('flex', 'hidden');
+                    document.getElementById('previewBox').classList.replace('hidden', 'flex');
+                    document.getElementById('resetBtn').classList.remove('hidden');
+                    
+                    document.getElementById('controlPanel').classList.remove('opacity-50', 'pointer-events-none');
+                }
+                originalImage.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function resetUpload() {
+            document.querySelector('input[type="file"]').value = "";
+            document.getElementById('uploadBox').classList.replace('hidden', 'flex');
+            document.getElementById('previewBox').classList.replace('flex', 'hidden');
+            document.getElementById('resetBtn').classList.add('hidden');
+            document.getElementById('controlPanel').classList.add('opacity-50', 'pointer-events-none');
+            document.getElementById('targetKB').value = "";
+        }
+
+        // 3. Aspect Ratio Math Engine
+        function toggleRatio() {
+            if(document.getElementById('lockRatio').checked) updateW();
+        }
+
+        function updateW() {
+            const w = parseInt(document.getElementById('inputW').value) || 0;
+            if(document.getElementById('lockRatio').checked && w > 0) {
+                document.getElementById('inputH').value = Math.round(w / origRatio);
+            }
+            updateNewDimDisplay();
+        }
+
+        function updateH() {
+            const h = parseInt(document.getElementById('inputH').value) || 0;
+            if(document.getElementById('lockRatio').checked && h > 0) {
+                document.getElementById('inputW').value = Math.round(h * origRatio);
+            }
+            updateNewDimDisplay();
+        }
+
+        function applyPercent(pct) {
+            document.getElementById('inputW').value = Math.round(origW * (pct / 100));
+            document.getElementById('inputH').value = Math.round(origH * (pct / 100));
+            updateNewDimDisplay();
+        }
+
+        function updateNewDimDisplay() {
+            const w = document.getElementById('inputW').value;
+            const h = document.getElementById('inputH').value;
+            document.getElementById('newDim').innerText = `${w} x ${h} px`;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024, sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 4. MASTER RESIZE & CONVERT ENGINE
+        async function processAndDownload() {
+            const targetW = parseInt(document.getElementById('inputW').value);
+            const targetH = parseInt(document.getElementById('inputH').value);
+            let targetKB = parseInt(document.getElementById('targetKB').value);
+            
+            // Format set karna
+            const formatMimeType = `image/${currentFormat}`;
+
+            if (!targetW || !targetH) return alert("Please enter valid width and height!");
+
+            const loader = document.getElementById('loadingOverlay');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+
+            setTimeout(async () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Transparent images convert karte samay background black na ho isliye safed (white) daalo agar JPG/BMP ho
+                    if(currentFormat === 'jpeg' || currentFormat === 'bmp') {
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+
+                    let finalBlob = null;
+
+                    // Compress Logic (Only for JPG/WEBP)
+                    if (targetKB > 0 && (currentFormat === 'jpeg' || currentFormat === 'webp')) {
+                        const targetBytes = targetKB * 1024;
+                        let minQ = 0.0, maxQ = 1.0, quality = 0.8, bestBlob = null;
+                        
+                        for (let i = 0; i < 8; i++) {
+                            const blob = await new Promise(resolve => canvas.toBlob(resolve, formatMimeType, quality));
+                            bestBlob = blob;
+                            
+                            if (blob.size <= targetBytes && blob.size >= targetBytes - 2048) break; 
+                            if (blob.size > targetBytes) { maxQ = quality; quality = (minQ + maxQ) / 2; } 
+                            else { minQ = quality; quality = (minQ + maxQ) / 2; }
+                        }
+                        finalBlob = bestBlob;
+                        if(finalBlob.size > targetBytes + 5120) {
+                            alert(`Notice: Target was ${targetKB}KB, but resolution is too high. Minimum possible size is ${formatBytes(finalBlob.size)}. Decrease width/height.`);
+                        }
+                    } else {
+                        // Normal Conversion (PNG, GIF, AVIF, BMP, ya bina compression target wala JPG)
+                        finalBlob = await new Promise(resolve => canvas.toBlob(resolve, formatMimeType, 0.95));
+                    }
+
+                    // Download Trigger
+                    const url = URL.createObjectURL(finalBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Extension fix (jpeg -> jpg)
+                    let ext = currentFormat;
+                    if(ext === 'jpeg') ext = 'jpg';
+                    
+                    a.download = `RS_Converted_${targetW}x${targetH}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    document.getElementById('newSizeStatus').innerText = `Saved as ${formatBytes(finalBlob.size)} (${ext.toUpperCase()})`;
+
+                } catch(e) {
+                    console.error(e);
+                    alert("Error during processing!");
+                } finally {
+                    loader.classList.remove('flex'); loader.classList.add('hidden');
+                }
+            }, 150); 
+        }
+    </script>
+</body>
+</html>

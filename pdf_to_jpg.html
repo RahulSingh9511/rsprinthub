@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to JPG Converter - Print Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fffbeb; overflow-x: hidden; }
+        
+        .page-bg { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%); background-size: 200% 200%; animation: gradientMove 12s ease infinite; }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        .glass-box { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        
+        .upload-zone { border: 3px dashed #fbbf24; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-zone:hover { background-color: #fffbeb; border-color: #f59e0b; transform: scale(1.02); }
+
+        /* Custom Scrollbar for Workspace */
+        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #fef3c7; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #fcd34d; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #fbbf24; }
+
+        .img-card { transition: all 0.3s; }
+        .img-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.3); border-color: #fbbf24; }
+
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen page-bg">
+
+    <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b-4 border-amber-500 no-print">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white px-5 py-2 rounded-xl font-bold transition shadow-sm border border-amber-200">
+                <i class="fa-solid fa-arrow-left"></i> Main Dashboard
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600 text-2xl flex items-center gap-2">
+                <i class="fa-solid fa-file-image text-amber-500"></i> Smart PDF to JPG
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto p-4 md:p-6 flex flex-col items-center">
+        
+        <div class="w-full glass-box rounded-[2.5rem] p-6 md:p-10 relative overflow-hidden mt-2">
+            
+            <div id="uploadView" class="text-center w-full max-w-3xl mx-auto py-8">
+                <div class="inline-block bg-amber-100 text-amber-700 font-bold px-6 py-2 rounded-full text-xs mb-6 uppercase tracking-widest shadow-sm border border-amber-200">
+                    <i class="fa-solid fa-bolt text-orange-500 mr-1"></i> Extract High Quality Images
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black text-gray-800 mb-4 tracking-tight">Convert PDF to <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">JPG Images</span></h1>
+                <p class="text-gray-500 font-bold text-base mb-10">Upload a PDF document and we will extract every page into a high-quality JPG image format.</p>
+
+                <div class="mb-8 flex flex-col items-center">
+                    <label class="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Select Image Quality</label>
+                    <div class="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm inline-flex">
+                        <div class="relative">
+                            <input type="radio" name="imgQuality" id="q_normal" value="normal" class="hidden peer" checked>
+                            <label for="q_normal" class="px-6 py-2 rounded-lg text-sm font-black cursor-pointer transition peer-checked:bg-amber-100 peer-checked:text-amber-700 text-gray-500 block">Standard (Fast)</label>
+                        </div>
+                        <div class="relative">
+                            <input type="radio" name="imgQuality" id="q_hd" value="hd" class="hidden peer">
+                            <label for="q_hd" class="px-6 py-2 rounded-lg text-sm font-black cursor-pointer transition peer-checked:bg-amber-100 peer-checked:text-amber-700 text-gray-500 block">HD Quality (Best Print)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <label for="pdfInput" class="upload-zone flex flex-col items-center justify-center w-full h-72 bg-white rounded-3xl cursor-pointer shadow-inner relative group">
+                    <div class="absolute inset-0 bg-amber-50/50 opacity-0 group-hover:opacity-100 transition duration-300 rounded-3xl"></div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-24 h-24 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-md group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800 mb-2">Select PDF File</h3>
+                        <p class="text-sm font-bold text-amber-600 bg-amber-50 px-5 py-1.5 rounded-full border border-amber-200">Only .PDF format supported</p>
+                    </div>
+                    <input type="file" id="pdfInput" accept="application/pdf" class="hidden" onchange="startConversion(event)">
+                </label>
+            </div>
+
+            <div id="workspaceView" class="hidden w-full">
+                
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-gray-800"><i class="fa-solid fa-images text-amber-500 mr-2"></i> Extracted Images</h2>
+                        <p class="text-sm font-bold text-gray-500 mt-1">File: <span id="fileNameDisplay" class="text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">document.pdf</span> (<span id="pageCountDisplay">0</span> Pages)</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <button onclick="downloadAllAsZip()" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-black text-sm shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-2 flex-grow md:flex-none">
+                            <i class="fa-solid fa-file-zipper text-lg"></i> Download All (ZIP)
+                        </button>
+                        <button onclick="resetApp()" class="px-4 py-3 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 font-bold text-sm transition border border-gray-300">
+                            <i class="fa-solid fa-rotate-left"></i> Start Over
+                        </button>
+                    </div>
+                </div>
+
+                <div id="imagesGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-h-[65vh] overflow-y-auto custom-scroll p-2">
+                    </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white/95 z-[200] items-center justify-center flex-col backdrop-blur-sm">
+        <i class="fa-solid fa-spinner fa-spin text-7xl text-amber-500 mb-6"></i>
+        <h2 class="text-3xl font-black text-gray-800" id="loaderTitle">Converting PDF...</h2>
+        <p class="text-gray-500 font-bold mt-2" id="loaderSubText">Extracting page 1 of X</p>
+        
+        <div class="w-64 h-3 bg-gray-200 rounded-full mt-6 overflow-hidden shadow-inner">
+            <div id="progressBar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 w-0 transition-all duration-300 rounded-full"></div>
+        </div>
+    </div>
+
+    <script>
+        let extractedImages = []; // Stores { pageNum, dataUrl }
+        let originalFileName = "document";
+
+        // --- 1. Start PDF Conversion Process ---
+        async function startConversion(event) {
+            const file = event.target.files[0];
+            if(!file || file.type !== 'application/pdf') return alert("Please select a PDF file.");
+
+            originalFileName = file.name.split('.')[0];
+            document.getElementById('fileNameDisplay').innerText = file.name;
+
+            const qualitySetting = document.querySelector('input[name="imgQuality"]:checked').value;
+            // Scale determines resolution: 1.5 is good for standard screens, 2.5 is excellent for High Quality printing
+            const scaleFactor = (qualitySetting === 'hd') ? 2.5 : 1.5;
+            const jpegQuality = (qualitySetting === 'hd') ? 1.0 : 0.8;
+
+            const loader = document.getElementById('loadingOverlay');
+            const loaderTitle = document.getElementById('loaderTitle');
+            const loaderSubText = document.getElementById('loaderSubText');
+            const progressBar = document.getElementById('progressBar');
+            
+            loaderTitle.innerText = "Extracting Images...";
+            progressBar.style.width = '0%';
+            loader.classList.replace('hidden', 'flex');
+
+            extractedImages = []; // reset array
+
+            try {
+                // Convert file to ArrayBuffer
+                const fileBuffer = await file.arrayBuffer();
+                
+                // Load PDF via PDF.js
+                const loadingTask = pdfjsLib.getDocument({ data: fileBuffer });
+                const pdf = await loadingTask.promise;
+                const totalPages = pdf.numPages;
+
+                document.getElementById('pageCountDisplay').innerText = totalPages;
+
+                // Loop through all pages
+                for(let i = 1; i <= totalPages; i++) {
+                    loaderSubText.innerText = `Processing page ${i} of ${totalPages}...`;
+                    progressBar.style.width = `${((i - 1) / totalPages) * 100}%`;
+
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: scaleFactor });
+
+                    // Create Canvas
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+
+                    // CRITICAL: PDFs have transparent backgrounds by default. We must fill white first so JPG doesn't turn black.
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Render Page onto Canvas
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                    // Convert to JPG Data URL
+                    const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
+                    
+                    extractedImages.push({
+                        pageNum: i,
+                        dataUrl: dataUrl
+                    });
+                }
+
+                progressBar.style.width = '100%';
+                loaderSubText.innerText = "Finalizing layout...";
+
+                // Render the UI
+                renderImagesGrid();
+
+                setTimeout(() => {
+                    document.getElementById('uploadView').classList.add('hidden');
+                    document.getElementById('workspaceView').classList.remove('hidden');
+                    loader.classList.replace('flex', 'hidden');
+                }, 500);
+
+            } catch(e) {
+                console.error(e);
+                alert("Error processing the PDF. The file might be corrupted or password protected.");
+                loader.classList.replace('flex', 'hidden');
+                resetApp();
+            }
+            
+            event.target.value = ''; // Reset input
+        }
+
+        // --- 2. Render Cards in Grid ---
+        function renderImagesGrid() {
+            const grid = document.getElementById('imagesGrid');
+            grid.innerHTML = ""; // Clear existing
+
+            extractedImages.forEach((imgObj) => {
+                const card = document.createElement('div');
+                card.className = "img-card bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex flex-col group relative";
+
+                // Thumbnail Container
+                const imgContainer = document.createElement('div');
+                imgContainer.className = "w-full aspect-[1/1.414] bg-gray-50 border border-gray-100 rounded-xl overflow-hidden relative mb-3 flex items-center justify-center";
+                
+                const img = document.createElement('img');
+                img.src = imgObj.dataUrl;
+                img.className = "w-full h-full object-contain";
+                
+                // Overlay for Direct Print
+                const printOverlay = document.createElement('div');
+                printOverlay.className = "absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center";
+                const printBtn = document.createElement('button');
+                printBtn.innerHTML = '<i class="fa-solid fa-print mr-1"></i> Print';
+                printBtn.className = "bg-white text-gray-900 px-4 py-2 rounded-lg font-black text-xs shadow-lg hover:bg-amber-500 hover:text-white transition transform hover:scale-105";
+                printBtn.onclick = () => printSingleImage(imgObj.dataUrl);
+                
+                printOverlay.appendChild(printBtn);
+                imgContainer.appendChild(img);
+                imgContainer.appendChild(printOverlay);
+
+                // Info & Download Button
+                const infoDiv = document.createElement('div');
+                infoDiv.className = "flex justify-between items-center mt-auto";
+                
+                const pageLabel = document.createElement('span');
+                pageLabel.className = "text-xs font-black text-gray-500 uppercase";
+                pageLabel.innerText = `Page ${imgObj.pageNum}`;
+
+                const dlBtn = document.createElement('button');
+                dlBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                dlBtn.className = "w-8 h-8 rounded-full bg-amber-100 text-amber-600 hover:bg-amber-600 hover:text-white flex items-center justify-center transition shadow-sm";
+                dlBtn.onclick = () => downloadSingleImage(imgObj.dataUrl, imgObj.pageNum);
+
+                infoDiv.appendChild(pageLabel);
+                infoDiv.appendChild(dlBtn);
+
+                card.appendChild(imgContainer);
+                card.appendChild(infoDiv);
+                
+                grid.appendChild(card);
+            });
+        }
+
+        // --- 3. Action Logic ---
+        function downloadSingleImage(dataUrl, pageNum) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${originalFileName}_Page_${pageNum}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function printSingleImage(dataUrl) {
+            const printWindow = window.open('', '_blank');
+            if(!printWindow) return alert("Popup blocked! Please allow popups to print.");
+
+            const printHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print Image</title>
+                <style>
+                    @page { margin: 0; }
+                    body { margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: white; }
+                    img { max-width: 100%; max-height: 95vh; object-fit: contain; }
+                </style>
+            </head>
+            <body>
+                <img src="${dataUrl}" onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+            </body>
+            </html>`;
+            printWindow.document.write(printHTML);
+            printWindow.document.close();
+        }
+
+        // JSZip: Download all extracted images inside a single ZIP file
+        async function downloadAllAsZip() {
+            if(extractedImages.length === 0) return;
+
+            const loader = document.getElementById('loadingOverlay');
+            document.getElementById('loaderTitle').innerText = "Creating ZIP File...";
+            document.getElementById('loaderSubText').innerText = "Packaging all images together...";
+            document.getElementById('progressBar').style.width = "50%";
+            loader.classList.replace('hidden', 'flex');
+
+            try {
+                const zip = new JSZip();
+                
+                extractedImages.forEach((imgObj) => {
+                    // Extract base64 raw data from DataURL (remove "data:image/jpeg;base64,")
+                    const base64Data = imgObj.dataUrl.split(',')[1];
+                    // Add file to ZIP folder
+                    zip.file(`${originalFileName}_Page_${imgObj.pageNum}.jpg`, base64Data, {base64: true});
+                });
+
+                document.getElementById('progressBar').style.width = "80%";
+
+                // Generate ZIP Blob
+                const content = await zip.generateAsync({ type: "blob" });
+                
+                // Trigger Download
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `${originalFileName}_All_Pages.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch(e) {
+                console.error(e);
+                alert("Error creating ZIP file.");
+            } finally {
+                loader.classList.replace('flex', 'hidden');
+            }
+        }
+
+        // --- 4. Reset ---
+        function resetApp() {
+            extractedImages = [];
+            document.getElementById('imagesGrid').innerHTML = "";
+            document.getElementById('workspaceView').classList.add('hidden');
+            document.getElementById('uploadView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

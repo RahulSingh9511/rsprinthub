@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Compressor & Resizer - Print Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Core PDF Engines for Client-Side Compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // Setup PDF.js Worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff7ed; overflow-x: hidden; }
+        
+        /* Premium Animated Background */
+        .page-bg {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%);
+            background-size: 200% 200%;
+            animation: gradientMove 12s ease infinite;
+        }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* Glassmorphism */
+        .glass-box { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15); }
+        
+        /* Drag & Drop Upload Zone */
+        .upload-zone { border: 3px dashed #fb923c; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .upload-zone:hover { background-color: #fff7ed; border-color: #f97316; transform: scale(1.02); }
+
+        /* Custom Radio Buttons for Settings */
+        .setting-radio:checked + label { background-color: #fff7ed; border-color: #f97316; ring: 2px; ring-color: #f97316; }
+        .setting-radio:checked + label .icon-box { background-color: #f97316; color: white; }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen page-bg">
+
+    <!-- Header Panel -->
+    <header class="bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b-4 border-orange-500">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white px-5 py-2 rounded-xl font-bold transition shadow-sm border border-orange-200">
+                <i class="fa-solid fa-arrow-left"></i> Main Dashboard
+            </a>
+            <div class="font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600 text-2xl flex items-center gap-2">
+                <i class="fa-solid fa-file-zipper text-orange-500"></i> Smart PDF Compressor
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-5xl mx-auto p-4 md:p-8 flex items-center justify-center">
+        
+        <div class="w-full glass-box rounded-[2rem] p-6 md:p-12 relative overflow-hidden">
+            
+            <!-- STEP 1: UPLOAD VIEW -->
+            <div id="uploadView" class="text-center w-full max-w-3xl mx-auto">
+                <div class="inline-block bg-orange-100 text-orange-700 font-bold px-6 py-2 rounded-full text-xs mb-6 uppercase tracking-widest shadow-sm border border-orange-200">
+                    <i class="fa-solid fa-compress text-red-500 mr-1"></i> Reduce PDF File Size
+                </div>
+                <h1 class="text-4xl md:text-5xl font-black text-gray-800 mb-4 tracking-tight">Compress <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600">PDF Files</span></h1>
+                <p class="text-gray-500 font-bold text-base mb-10">Reduce file size while optimizing for maximal PDF quality. Perfect for email attachments and web uploads.</p>
+
+                <label for="pdfInput" class="upload-zone flex flex-col items-center justify-center w-full h-80 bg-white rounded-3xl cursor-pointer shadow-inner relative group">
+                    <div class="absolute inset-0 bg-orange-50/50 opacity-0 group-hover:opacity-100 transition duration-300 rounded-3xl"></div>
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="w-24 h-24 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-5xl mb-6 shadow-md group-hover:scale-110 transition duration-300 group-hover:rotate-3">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-gray-800 mb-2">Select PDF File</h3>
+                        <p class="text-sm font-bold text-orange-600 bg-orange-50 px-5 py-1.5 rounded-full border border-orange-200">Or drag and drop PDF here</p>
+                    </div>
+                    <input type="file" id="pdfInput" accept="application/pdf" class="hidden" onchange="handlePDFSelection(event)">
+                </label>
+            </div>
+
+            <!-- STEP 2: SETTINGS & COMPRESSION VIEW -->
+            <div id="settingsView" class="hidden w-full">
+                <div class="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-gray-800"><i class="fa-solid fa-sliders text-orange-500 mr-2"></i> Compression Settings</h2>
+                        <p class="text-sm font-bold text-gray-500 mt-1">Selected File: <span id="fileNameDisplay" class="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">document.pdf</span> (<span id="fileSizeDisplay">0 MB</span>)</p>
+                    </div>
+                    <button onclick="resetApp()" class="text-sm font-bold text-red-500 hover:text-red-700 bg-red-50 px-4 py-2 rounded-xl border border-red-200 transition"><i class="fa-solid fa-xmark mr-1"></i> Change File</button>
+                </div>
+
+                <!-- Compression Level Options Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <!-- Less Compression -->
+                    <div class="relative">
+                        <input type="radio" name="compLevel" id="comp_low" value="low" onchange="toggleCustomSizeInput(false)" class="setting-radio hidden">
+                        <label for="comp_low" class="flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl cursor-pointer transition shadow-sm bg-white hover:border-orange-300 h-full">
+                            <div class="icon-box w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm mb-3 transition"><i class="fa-solid fa-check"></i></div>
+                            <h3 class="font-black text-gray-800 text-sm mb-1">Less Compression</h3>
+                            <p class="text-[11px] text-center text-gray-400 font-bold">High quality, less reduction.</p>
+                        </label>
+                    </div>
+                    <!-- Recommended Compression -->
+                    <div class="relative">
+                        <input type="radio" name="compLevel" id="comp_med" value="medium" onchange="toggleCustomSizeInput(false)" class="setting-radio hidden" checked>
+                        <label for="comp_med" class="flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl cursor-pointer transition shadow-sm bg-white hover:border-orange-300 h-full relative overflow-hidden">
+                            <div class="icon-box w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm mb-3 transition"><i class="fa-solid fa-thumbs-up"></i></div>
+                            <h3 class="font-black text-gray-800 text-sm mb-1">Good Compression</h3>
+                            <p class="text-[11px] text-center text-gray-400 font-bold">Standard balanced output.</p>
+                        </label>
+                    </div>
+                    <!-- Extreme Compression -->
+                    <div class="relative">
+                        <input type="radio" name="compLevel" id="comp_high" value="high" onchange="toggleCustomSizeInput(false)" class="setting-radio hidden">
+                        <label for="comp_high" class="flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl cursor-pointer transition shadow-sm bg-white hover:border-orange-300 h-full">
+                            <div class="icon-box w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm mb-3 transition"><i class="fa-solid fa-compress"></i></div>
+                            <h3 class="font-black text-gray-800 text-sm mb-1">Extreme Size</h3>
+                            <p class="text-[11px] text-center text-gray-400 font-bold">Low quality, maximum save.</p>
+                        </label>
+                    </div>
+                    <!-- NEW: CUSTOM TARGET SIZE OPTION -->
+                    <div class="relative">
+                        <input type="radio" name="compLevel" id="comp_custom" value="custom" onchange="toggleCustomSizeInput(true)" class="setting-radio hidden">
+                        <label for="comp_custom" class="flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl cursor-pointer transition shadow-sm bg-white hover:border-orange-300 h-full">
+                            <div class="icon-box w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-sm mb-3 transition"><i class="fa-solid fa-keyboard"></i></div>
+                            <h3 class="font-black text-gray-800 text-sm mb-1">Custom Target Size</h3>
+                            <p class="text-[11px] text-center text-gray-400 font-bold">Enter exact required KB/MB.</p>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Custom Size Input Fields Wrapper (Smooth appearance) -->
+                <div id="customSizeWrapper" class="hidden max-w-md mx-auto mb-8 bg-orange-50 border border-orange-200 p-4 rounded-xl text-center shadow-inner animate-fade-in">
+                    <label class="block text-xs font-black text-orange-700 uppercase mb-2">Enter Target File Size</label>
+                    <div class="flex gap-2 justify-center items-center">
+                        <input type="number" id="targetSizeValue" value="200" min="10" class="w-32 p-2 border border-gray-300 rounded-lg outline-none font-black text-center text-lg focus:border-orange-500">
+                        <select id="targetSizeUnit" class="p-2 border border-gray-300 rounded-lg font-bold bg-white text-sm outline-none cursor-pointer">
+                            <option value="kb">KB</option>
+                            <option value="mb">MB</option>
+                        </select>
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-2 font-bold">* AI engine will automatically adjust DPI resolution scaling to meet this match.</p>
+                </div>
+
+                <div class="text-center" id="actionBtnContainer">
+                    <button onclick="startCompression()" class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-12 py-5 rounded-xl font-black text-2xl shadow-xl transition transform hover:-translate-y-1 flex items-center justify-center mx-auto w-full md:w-auto">
+                        <i class="fa-solid fa-gears mr-3"></i> COMPRESS PDF NOW
+                    </button>
+                </div>
+
+                <!-- Live Progress Bar -->
+                <div id="progressContainer" class="hidden mt-8 max-w-xl mx-auto text-center">
+                    <h3 class="font-black text-gray-800 mb-2 text-lg" id="progressText">Processing Pages...</h3>
+                    <p class="text-sm font-bold text-gray-500 mb-4" id="progressSubText">Page 0 of 0</p>
+                    <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                        <div id="progressBar" class="h-full bg-gradient-to-r from-orange-500 to-red-500 w-0 transition-all duration-300 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: SUCCESS & DOWNLOAD VIEW -->
+            <div id="successView" class="hidden w-full text-center py-8">
+                <div class="w-20 h-20 bg-green-500 text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-lg shadow-green-500/40 animate-bounce">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h2 class="text-4xl font-black text-gray-800 mb-2">PDF Compressed Successfully!</h2>
+                <p class="text-gray-500 font-bold text-lg mb-10">Your file is now lighter and ready to share.</p>
+
+                <!-- Data Saver Stats -->
+                <div class="flex justify-center items-center gap-8 mb-12">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm w-40">
+                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Original Size</p>
+                        <h3 class="text-2xl font-black text-gray-700" id="statOldSize">0 MB</h3>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-2xl text-gray-300"></i>
+                    <div class="bg-white p-6 rounded-2xl border border-orange-200 shadow-md w-40 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-black px-2 py-0.5 rounded-bl-lg">NEW</div>
+                        <p class="text-xs font-black text-orange-400 uppercase tracking-widest mb-2">Compressed</p>
+                        <h3 class="text-2xl font-black text-orange-600" id="statNewSize">0 MB</h3>
+                    </div>
+                    <div class="hidden md:flex flex-col items-center ml-4">
+                        <span class="bg-green-100 text-green-700 font-black text-2xl px-4 py-2 rounded-xl border border-green-300 shadow-sm"><i class="fa-solid fa-arrow-down mr-1"></i><span id="statSaved">0</span>%</span>
+                        <p class="text-[10px] font-bold text-gray-500 uppercase mt-2">Space Saved</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl mx-auto">
+                    <button onclick="downloadCompressedPDF()" class="bg-gray-900 hover:bg-black text-white py-4 rounded-xl font-black text-lg shadow-xl transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download PDF
+                    </button>
+                    <button onclick="printCompressedPDF()" class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-4 rounded-xl font-black text-lg shadow-xl transition transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-print"></i> Direct Print
+                    </button>
+                </div>
+                
+                <button onclick="resetApp()" class="mt-8 text-sm font-bold text-blue-600 hover:text-blue-800 underline"><i class="fa-solid fa-rotate-left mr-1"></i> Compress Another File</button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let originalFile = null;
+        let originalFileArrayBuffer = null;
+        let compressedPdfInstance = null;
+
+        // Toggle visibility of Custom Size Input box
+        function toggleCustomSizeInput(show) {
+            const wrapper = document.getElementById('customSizeWrapper');
+            if (show) wrapper.classList.remove('hidden');
+            else wrapper.classList.add('hidden');
+        }
+
+        // --- 1. Handle File Selection ---
+        function handlePDFSelection(event) {
+            const file = event.target.files[0];
+            if(!file || file.type !== 'application/pdf') {
+                alert("Please select a valid PDF file.");
+                return;
+            }
+
+            originalFile = file;
+            
+            let sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            let sizeDisplay = sizeMB > 1 ? sizeMB + " MB" : (file.size / 1024).toFixed(0) + " KB";
+            
+            document.getElementById('fileNameDisplay').innerText = file.name;
+            document.getElementById('fileSizeDisplay').innerText = sizeDisplay;
+            document.getElementById('statOldSize').innerText = sizeDisplay;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                originalFileArrayBuffer = e.target.result;
+                document.getElementById('uploadView').classList.add('hidden');
+                document.getElementById('settingsView').classList.remove('hidden');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- 2. Start Compression Engine ---
+        async function startCompression() {
+            if(!originalFileArrayBuffer) return;
+
+            document.getElementById('actionBtnContainer').classList.add('hidden');
+            document.getElementById('progressContainer').classList.remove('hidden');
+
+            const compLevel = document.querySelector('input[name="compLevel"]:checked').value;
+            
+            let scale = 1.5; 
+            let imgQuality = 0.7; 
+
+            if(compLevel === 'low') { scale = 2.0; imgQuality = 0.9; } 
+            else if(compLevel === 'medium') { scale = 1.5; imgQuality = 0.6; } 
+            else if(compLevel === 'high') { scale = 1.0; imgQuality = 0.3; }
+            else if(compLevel === 'custom') {
+                // ---- SMART TARGET SIZE RATIO ALGORITHM ----
+                let targetInput = parseFloat(document.getElementById('targetSizeValue').value) || 200;
+                let targetUnit = document.getElementById('targetSizeUnit').value;
+                let targetBytes = targetUnit === 'mb' ? targetInput * 1024 * 1024 : targetInput * 1024;
+                
+                // Compare Target vs Original to choose best fit
+                let ratioNeeded = targetBytes / originalFile.size;
+                
+                if (ratioNeeded >= 0.8) { scale = 1.8; imgQuality = 0.85; }
+                else if (ratioNeeded >= 0.5 && ratioNeeded < 0.8) { scale = 1.5; imgQuality = 0.65; }
+                else if (ratioNeeded >= 0.2 && ratioNeeded < 0.5) { scale = 1.1; imgQuality = 0.45; }
+                else { scale = 0.8; imgQuality = 0.25; } // Deep extreme scaling for ultra low sizes
+            }
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({ data: originalFileArrayBuffer });
+                const pdfDocument = await loadingTask.promise;
+                const totalPages = pdfDocument.numPages;
+
+                compressedPdfInstance = new jspdf.jsPDF('p', 'mm', 'a4');
+                compressedPdfInstance.deletePage(1); // Flush default blank layer
+
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    let progressPercent = ((pageNum - 1) / totalPages) * 100;
+                    document.getElementById('progressBar').style.width = progressPercent + '%';
+                    document.getElementById('progressSubText').innerText = `Reducing Page ${pageNum} of ${totalPages}`;
+
+                    const page = await pdfDocument.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+                    const imgData = canvas.toDataURL('image/jpeg', imgQuality);
+                    const orientation = viewport.width > viewport.height ? 'l' : 'p';
+                    
+                    compressedPdfInstance.addPage([viewport.width, viewport.height], orientation);
+                    compressedPdfInstance.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
+                }
+
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressText').innerText = "Finishing Document...";
+
+                // Render metrics block
+                const blob = compressedPdfInstance.output('blob');
+                const newSizeMB = (blob.size / (1024 * 1024)).toFixed(2);
+                const newSizeDisplay = newSizeMB > 1 ? newSizeMB + " MB" : (blob.size / 1024).toFixed(0) + " KB";
+                document.getElementById('statNewSize').innerText = newSizeDisplay;
+
+                const percentSaved = Math.max(0, 100 - ((blob.size / originalFile.size) * 100)).toFixed(0);
+                document.getElementById('statSaved').innerText = percentSaved;
+
+                setTimeout(() => {
+                    document.getElementById('settingsView').classList.add('hidden');
+                    document.getElementById('successView').classList.remove('hidden');
+                }, 800);
+
+            } catch(e) {
+                console.error(e);
+                alert("Error compiling custom format.");
+                resetApp();
+            }
+        }
+
+        // --- 3. Actions ---
+        function downloadCompressedPDF() {
+            if(compressedPdfInstance && originalFile) {
+                const newName = originalFile.name.replace('.pdf', '_compressed.pdf');
+                compressedPdfInstance.save(newName);
+            }
+        }
+
+        function printCompressedPDF() {
+            if(compressedPdfInstance) {
+                const blob = compressedPdfInstance.output('blob');
+                const url = URL.createObjectURL(blob);
+                
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert("Popup blocked! Please allow popups to print.");
+                    return;
+                }
+
+                const printHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Document</title>
+                    <style>
+                        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #525659; }
+                        iframe { width: 100%; height: 100%; border: none; }
+                    </style>
+                </head>
+                <body>
+                    <iframe src="${url}"></iframe>
+                    <script>
+                        setTimeout(() => { window.print(); }, 1500);
+                    <\/script>
+                </body>
+                </html>`;
+
+                printWindow.document.write(printHTML);
+                printWindow.document.close();
+            }
+        }
+
+        // --- 4. Reset ---
+        function resetApp() {
+            originalFile = null;
+            originalFileArrayBuffer = null;
+            compressedPdfInstance = null;
+            
+            document.getElementById('pdfInput').value = '';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').innerText = "Processing Pages...";
+            
+            document.getElementById('successView').classList.add('hidden');
+            document.getElementById('settingsView').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('hidden');
+            document.getElementById('customSizeWrapper').classList.add('hidden');
+            
+            document.getElementById('actionBtnContainer').classList.remove('hidden');
+            document.getElementById('uploadView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

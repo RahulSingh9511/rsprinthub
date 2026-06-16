@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Marriage Biodata Maker | 100% Free</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Extensive Google Fonts (8 Pairs) -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&family=Great+Vibes&family=Lato:wght@400;700&family=Cinzel:wght@600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;600&family=Merriweather:wght@400;700&family=Roboto:wght@400;500&family=Dancing+Script:wght@600&family=Open+Sans:wght@400;600&family=Cormorant+Garamond:wght@500;600&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- jsPDF & html2canvas for Bulletproof Printing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* Base & Scrollbar */
+        body { background-color: #f1f5f9; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Accordion Logic */
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+        .accordion-content.open { max-height: 1500px; }
+        .accordion-icon { transition: transform 0.3s ease; }
+        .open .accordion-icon { transform: rotate(180deg); }
+
+        /* Custom UI Inputs */
+        .form-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #1e293b; outline: none; transition: 0.2s; background: white; }
+        .form-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); }
+        .form-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Delete Button Hover Animation */
+        .del-btn { opacity: 0.5; transition: all 0.2s; }
+        .del-btn:hover { opacity: 1; transform: scale(1.1); color: #ef4444; }
+
+        /* Canvas Workspace */
+        .canvas-bg {
+            background-color: #e2e8f0;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* A4 Page Definition */
+        #a4-page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            position: relative;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        /* Responsive Scaling Wrapper */
+        #zoom-wrapper { transform-origin: top center; display: flex; justify-content: center; }
+
+        /* --- THEME ENGINE --- */
+        :root { --primary: #7f1d1d; --text-color: #1e293b; }
+        
+        /* Font Pairs */
+        .fp-1 .head-font { font-family: 'Playfair Display', serif; } .fp-1 .body-font { font-family: 'Inter', sans-serif; }
+        .fp-2 .head-font { font-family: 'Great Vibes', cursive; } .fp-2 .body-font { font-family: 'Lato', sans-serif; }
+        .fp-3 .head-font { font-family: 'Cinzel', serif; } .fp-3 .body-font { font-family: 'Lora', serif; }
+        .fp-4 .head-font { font-family: 'Montserrat', sans-serif; } .fp-4 .body-font { font-family: 'Roboto', sans-serif; }
+        .fp-5 .head-font { font-family: 'Dancing Script', cursive; } .fp-5 .body-font { font-family: 'Open Sans', sans-serif; }
+        .fp-6 .head-font { font-family: 'Cormorant Garamond', serif; } .fp-6 .body-font { font-family: 'Source Sans Pro', sans-serif; }
+
+        /* Borders & Framing */
+        .frame-sharp { border: 12px solid var(--primary); padding: 10mm; }
+        .frame-double { border: 2mm solid var(--primary); outline: 1mm solid var(--primary); outline-offset: -4mm; padding: 12mm; }
+        .frame-rounded { border: 10px solid var(--primary); border-radius: 40px; padding: 12mm; }
+        .frame-minimal { border-top: 15px solid var(--primary); padding: 15mm; }
+        .frame-ornamental { 
+            border: 15px solid transparent; 
+            border-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="10" stroke="%23000" stroke-width="2" fill="none"/></svg>') 30 round; 
+            padding: 15mm; 
+        }
+
+        /* Internal Biodata CSS Structure */
+        #cv-content { display: flex; flex-direction: column; width: 100%; height: 100%; color: var(--text-color); }
+        .sec-title { color: var(--primary); font-size: 1.25em; font-weight: 700; margin-bottom: 8px; border-bottom: 1.5px solid var(--primary); padding-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+        .info-grid { display: grid; grid-template-columns: 140px 15px 1fr; gap: 6px; font-size: 1em; align-items: start; margin-bottom: 4px; }
+        .lbl { font-weight: 600; color: #475569; }
+        .val { font-weight: 500; }
+        
+        /* Photo Masks */
+        .photo-box { object-fit: cover; border: 3px solid var(--primary); }
+        .mask-square { border-radius: 0; width: 130px; height: 160px; }
+        .mask-rounded { border-radius: 16px; width: 130px; height: 160px; }
+        .mask-oval { border-radius: 50%; width: 140px; height: 140px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <!-- 1. NAVIGATION BAR -->
+    <header class="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 z-50 shadow-sm no-print">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="text-slate-500 hover:text-pink-600 px-3 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-2 bg-gray-50 border border-gray-200 hover:bg-pink-50 hover:border-pink-200 mr-2">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </a>
+            <div class="h-6 w-px bg-gray-300"></div>
+
+            <div class="w-8 h-8 bg-gradient-to-tr from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center text-white shadow-md ml-1">
+                <i class="fa-solid fa-ring text-sm"></i>
+            </div>
+            <h1 class="text-lg font-bold text-gray-800 tracking-tight">Biodata<span class="text-violet-600">Pro</span></h1>
+            <span class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 ml-2">100% Free & Local</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.reload()" class="text-gray-500 hover:text-red-500 text-sm font-semibold transition flex items-center gap-1.5 bg-gray-50 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-gray-200">
+                <i class="fa-solid fa-rotate-right"></i> Reset
+            </button>
+            <button onclick="triggerPrint()" class="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-md transition flex items-center gap-2">
+                <i class="fa-solid fa-print"></i> Download / Print
+            </button>
+        </div>
+    </header>
+
+    <!-- SPLIT SCREEN LAYOUT -->
+    <div class="flex flex-grow overflow-hidden">
+        
+        <!-- LEFT PANEL: FORM INPUT ENGINE -->
+        <aside class="w-full lg:w-[45%] xl:w-[40%] bg-white border-r border-gray-200 flex flex-col shrink-0 z-30 shadow-2xl relative">
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200 bg-slate-50 shrink-0 p-2 gap-2">
+                <button id="tabBtn-details" onclick="switchTab('details')" class="flex-1 bg-white shadow-sm border border-gray-200 text-violet-700 py-2 rounded-md text-xs font-bold transition">1. Profile Details</button>
+                <button id="tabBtn-design" onclick="switchTab('design')" class="flex-1 text-gray-500 hover:bg-white py-2 rounded-md text-xs font-bold transition">2. Design Studio</button>
+            </div>
+
+            <!-- TAB 1: FORM INPUTS WITH DELETE BUTTONS -->
+            <div id="tabContent-details" class="flex-grow overflow-y-auto p-4 space-y-3 pb-20 custom-scroll">
+                
+                <!-- Header & Photo -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-50 border-b border-gray-100 flex justify-between items-center cursor-pointer accordion-toggle" onclick="toggleAcc(this)">
+                        <h3 class="font-bold text-xs text-gray-800 uppercase tracking-wider"><i class="fa-solid fa-image text-violet-500 w-4"></i> Header & Photo</h3>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content open p-4 space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="wrap_icon">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Religious Icon</label>
+                                    <button onclick="removeField('wrap_icon', 'cvHdIconBox')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <select id="inpHdIcon" class="form-input" onchange="updateData()">
+                                    <option value="fa-om">Om (ॐ)</option>
+                                    <option value="fa-gopuram">Ganesha / Temple</option>
+                                    <option value="fa-hands-praying">Hands / Namaste</option>
+                                    <option value="fa-khanda">Khanda (☬)</option>
+                                    <option value="fa-cross">Cross (✝)</option>
+                                    <option value="fa-star-and-crescent">Crescent (☪)</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                            <div id="wrap_greeting">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Greeting Text</label>
+                                    <button onclick="removeField('wrap_greeting', 'cvHdText')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpHdText" value="|| Shree Ganeshaya Namah ||" class="form-input" oninput="updateData()">
+                            </div>
+                        </div>
+                        <div id="wrap_photo" class="border border-dashed border-violet-300 bg-violet-50 p-4 rounded-lg text-center cursor-pointer hover:bg-violet-100 transition relative">
+                            <button onclick="removeField('wrap_photo', 'cvPhotoWrap'); event.stopPropagation();" class="absolute top-2 right-2 del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            <div onclick="document.getElementById('filePhoto').click()">
+                                <i class="fa-solid fa-camera text-2xl text-violet-400 mb-2"></i>
+                                <p class="text-xs font-bold text-violet-700">Upload Profile Photo</p>
+                            </div>
+                            <input type="file" id="filePhoto" accept="image/*" class="hidden" onchange="handlePhoto(event)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Specs -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-50 border-b border-gray-100 flex justify-between items-center cursor-pointer accordion-toggle" onclick="toggleAcc(this)">
+                        <h3 class="font-bold text-xs text-gray-800 uppercase tracking-wider"><i class="fa-solid fa-user text-violet-500 w-4"></i> Personal Details</h3>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content p-4 space-y-3 bg-slate-50/50">
+                        <div id="wrap_name">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Full Name</label>
+                                <button onclick="removeField('wrap_name', 'row_name')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpName" value="Priya Sharma" class="form-input font-bold" oninput="updateData()">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="wrap_dob">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Date of Birth</label>
+                                    <button onclick="removeField('wrap_dob', 'row_dob')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpDob" value="25 August 1996" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_tob">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Time of Birth</label>
+                                    <button onclick="removeField('wrap_tob', 'row_tob')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpTob" value="04:30 AM" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_pob" class="col-span-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Place of Birth</label>
+                                    <button onclick="removeField('wrap_pob', 'row_pob')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpPob" value="Mumbai, Maharashtra" class="form-input" oninput="updateData()">
+                            </div>
+                            
+                            <div id="wrap_height">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Height</label>
+                                    <button onclick="removeField('wrap_height', 'row_height')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpHeight" value="5 ft 5 in (165 cm)" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_blood">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Blood Group</label>
+                                    <button onclick="removeField('wrap_blood', 'row_blood')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpBlood" value="O Positive" class="form-input" oninput="updateData()">
+                            </div>
+                            
+                            <div id="wrap_gotra">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Gotra</label>
+                                    <button onclick="removeField('wrap_gotra', 'row_gotra')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpGotra" value="Bhardwaj" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_complex">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Complexion</label>
+                                    <button onclick="removeField('wrap_complex', 'row_complex')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpComplex" value="Fair" class="form-input" oninput="updateData()">
+                            </div>
+                            
+                            <div id="wrap_rashi">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Rashi (Zodiac)</label>
+                                    <button onclick="removeField('wrap_rashi', 'row_rashi')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpRashi" value="Kanya (Virgo)" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_nakshatra">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Nakshatra</label>
+                                    <button onclick="removeField('wrap_nakshatra', 'row_nakshatra')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpNakshatra" value="Chitra" class="form-input" oninput="updateData()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Career & Status -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-50 border-b border-gray-100 flex justify-between items-center cursor-pointer accordion-toggle" onclick="toggleAcc(this)">
+                        <h3 class="font-bold text-xs text-gray-800 uppercase tracking-wider"><i class="fa-solid fa-briefcase text-violet-500 w-4"></i> Education & Career</h3>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content p-4 space-y-3 bg-slate-50/50">
+                        <div id="wrap_edu">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Highest Education</label>
+                                <button onclick="removeField('wrap_edu', 'row_edu')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpEdu" value="M.Tech in Computer Science" class="form-input font-bold" oninput="updateData()">
+                        </div>
+                        <div id="wrap_uni">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">University / College</label>
+                                <button onclick="removeField('wrap_uni', 'row_uni')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpUni" value="IIT Bombay" class="form-input" oninput="updateData()">
+                        </div>
+                        <div class="h-px bg-gray-200 my-1"></div>
+                        <div id="wrap_job">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Occupation / Job Title</label>
+                                <button onclick="removeField('wrap_job', 'row_job')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpJob" value="Senior Software Engineer" class="form-input font-bold" oninput="updateData()">
+                        </div>
+                        <div id="wrap_comp">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Company Name</label>
+                                <button onclick="removeField('wrap_comp', 'row_comp')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpComp" value="Google India, Bangalore" class="form-input" oninput="updateData()">
+                        </div>
+                        <div id="wrap_inc">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Annual Income</label>
+                                <button onclick="removeField('wrap_inc', 'row_inc')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpInc" value="25 LPA" class="form-input" oninput="updateData()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Family Roots -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-50 border-b border-gray-100 flex justify-between items-center cursor-pointer accordion-toggle" onclick="toggleAcc(this)">
+                        <h3 class="font-bold text-xs text-gray-800 uppercase tracking-wider"><i class="fa-solid fa-users text-violet-500 w-4"></i> Family Background</h3>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content p-4 space-y-3 bg-slate-50/50">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="wrap_fname">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Father's Name</label>
+                                    <button onclick="removeField('wrap_fname', 'row_fname')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpFName" value="Mr. Ramesh Sharma" class="form-input font-bold" oninput="updateData()">
+                            </div>
+                            <div id="wrap_fjob">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Father's Occ.</label>
+                                    <button onclick="removeField('wrap_fjob', 'row_fjob')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpHJob" value="Retired Bank Manager" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_mname">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Mother's Name</label>
+                                    <button onclick="removeField('wrap_mname', 'row_mname')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpMName" value="Mrs. Sunita Sharma" class="form-input font-bold" oninput="updateData()">
+                            </div>
+                            <div id="wrap_mjob">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Mother's Occ.</label>
+                                    <button onclick="removeField('wrap_mjob', 'row_mjob')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpMJob" value="Homemaker" class="form-input" oninput="updateData()">
+                            </div>
+                        </div>
+                        <div class="h-px bg-gray-200 my-1"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div id="wrap_bros">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Brothers</label>
+                                    <button onclick="removeField('wrap_bros', 'row_bros')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpBros" value="1 (Married)" class="form-input" oninput="updateData()">
+                            </div>
+                            <div id="wrap_sis">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Sisters</label>
+                                    <button onclick="removeField('wrap_sis', 'row_sis')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                                <input type="text" id="inpSis" value="1 (Unmarried)" class="form-input" oninput="updateData()">
+                            </div>
+                        </div>
+                        <div id="wrap_mama">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Mama Surname</label>
+                                <button onclick="removeField('wrap_mama', 'row_mama')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpMama" value="Tiwari (Pune)" class="form-input" oninput="updateData()">
+                        </div>
+                        <div id="wrap_native">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Native Place</label>
+                                <button onclick="removeField('wrap_native', 'row_native')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpNative" value="Ratnagiri, Maharashtra" class="form-input" oninput="updateData()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Matrix -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div class="p-3 bg-slate-50 border-b border-gray-100 flex justify-between items-center cursor-pointer accordion-toggle" onclick="toggleAcc(this)">
+                        <h3 class="font-bold text-xs text-gray-800 uppercase tracking-wider"><i class="fa-solid fa-address-book text-violet-500 w-4"></i> Contact Info</h3>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs accordion-icon"></i>
+                    </div>
+                    <div class="accordion-content p-4 space-y-3 bg-slate-50/50">
+                        <div id="wrap_phone">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Mobile Number(s)</label>
+                                <button onclick="removeField('wrap_phone', 'row_phone')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpPhone" value="+91 98765 43210, 91234 56789" class="form-input font-bold" oninput="updateData()">
+                        </div>
+                        <div id="wrap_email">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Email Address</label>
+                                <button onclick="removeField('wrap_email', 'row_email')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <input type="text" id="inpEmail" value="priya.sharma@example.com" class="form-input" oninput="updateData()">
+                        </div>
+                        <div id="wrap_add">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="form-label mb-0">Residential Address</label>
+                                <button onclick="removeField('wrap_add', 'row_add')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                            <textarea id="inpAdd" rows="2" class="form-input resize-none" oninput="updateData()">Flat 402, Sunshine Apts, Andheri West, Mumbai - 400053</textarea>
+                        </div>
+                        <div id="wrap_kundli" class="mt-2">
+                            <div class="flex justify-between items-center">
+                                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                                    <input type="checkbox" id="inpKundli" checked class="accent-violet-600 w-4 h-4" onchange="updateData()"> Horoscope Note
+                                </label>
+                                <button onclick="removeField('wrap_kundli', 'cvKundliWrap')" class="del-btn text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: MASSIVE TEMPLATE & DESIGN BROWSER -->
+            <div id="tabContent-design" class="hidden flex-grow overflow-y-auto p-5 space-y-6 pb-20 custom-scroll bg-slate-50">
+                <div>
+                    <label class="form-label mb-2">Paper Dimension Layout</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setDimension('a4')" id="btnDim-a4" class="bg-violet-600 text-white border border-violet-700 py-2 rounded-md text-xs font-bold transition">A4 Standard (Print)</button>
+                        <button onclick="setDimension('mobile')" id="btnDim-mobile" class="bg-white text-gray-600 border border-gray-300 hover:bg-gray-50 py-2 rounded-md text-xs font-bold transition">Mobile Long Scroll</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label mb-2">Layout Shape & Frames</label>
+                    <select id="selFrame" class="form-input font-bold" onchange="updateDesign()">
+                        <option value="frame-sharp">Royal Standard (Sharp Thick Border)</option>
+                        <option value="frame-double">Classic Double-Line Heritage</option>
+                        <option value="frame-rounded">Modern Rounded Edges</option>
+                        <option value="frame-minimal">Corporate Minimalist (Top Block)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label mb-2">Profile Photo Frame</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setPhotoMask('mask-square')" class="bg-white border border-gray-300 py-2 rounded text-xs font-bold hover:border-violet-500"><i class="fa-regular fa-square"></i> Square</button>
+                        <button onclick="setPhotoMask('mask-rounded')" class="bg-white border border-gray-300 py-2 rounded text-xs font-bold hover:border-violet-500"><i class="fa-solid fa-square"></i> Rounded</button>
+                        <button onclick="setPhotoMask('mask-oval')" class="bg-white border border-gray-300 py-2 rounded text-xs font-bold hover:border-violet-500"><i class="fa-regular fa-circle"></i> Oval</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label mb-2">Typography & Font Pairings</label>
+                    <select id="selFont" class="form-input" onchange="updateDesign()">
+                        <option value="fp-1">Playfair (Head) + Inter (Body)</option>
+                        <option value="fp-3">Cinzel (Head) + Lora (Body)</option>
+                        <option value="fp-2">Great Vibes (Head) + Lato (Body)</option>
+                        <option value="fp-6">Garamond (Head) + Source Sans (Body)</option>
+                        <option value="fp-4">Montserrat (Head) + Roboto (Body)</option>
+                        <option value="fp-5">Dancing Script (Head) + Open Sans (Body)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label mb-2">Global Color Palette Matrix</label>
+                    <div class="grid grid-cols-5 gap-2" id="colorGrid"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: LIVE SMART PREVIEW CANVAS -->
+        <main class="w-full lg:w-[55%] xl:w-[60%] flex flex-col relative overflow-hidden bg-slate-200/50 no-print">
+            <div class="canvas-bg flex-grow relative overflow-auto p-4 sm:p-8 custom-scroll">
+                <div id="zoom-wrapper">
+                    <!-- THE A4 DOCUMENT -->
+                    <div id="a4-page" class="fp-1 frame-sharp">
+                        <div id="cv-content" class="body-font">
+                            
+                            <!-- Header Area -->
+                            <div class="text-center mb-5">
+                                <p id="cvHdText" class="head-font text-[1.1em] font-bold" style="color: var(--primary);"></p>
+                                <div id="cvHdIconBox" class="my-2"><i id="cvHdIcon" class="fa-solid fa-om text-[2em]" style="color: var(--primary);"></i></div>
+                                <h1 class="head-font text-[2.5em] font-black uppercase tracking-widest mt-1 mb-3" style="color: var(--primary);">Biodata</h1>
+                                
+                                <div id="cvPhotoWrap" class="hidden justify-center mb-2">
+                                    <img id="cvPhoto" src="" class="photo-box mask-square shadow-md">
+                                </div>
+                            </div>
+
+                            <!-- Personal Details -->
+                            <div class="mb-4">
+                                <h2 class="head-font sec-title"><i class="fa-solid fa-leaf text-[0.6em]"></i> Personal Details</h2>
+                                <div class="info-grid" id="row_name"><div class="lbl">Full Name</div><div>:</div><div class="val text-[1.2em] font-black" id="cvName"></div></div>
+                                <div class="info-grid" id="row_dob"><div class="lbl">Date of Birth</div><div>:</div><div class="val" id="cvDob"></div></div>
+                                <div class="info-grid" id="row_tob"><div class="lbl">Time of Birth</div><div>:</div><div class="val" id="cvTob"></div></div>
+                                <div class="info-grid" id="row_pob"><div class="lbl">Place of Birth</div><div>:</div><div class="val" id="cvPob"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_height"><div class="lbl">Height</div><div>:</div><div class="val" id="cvHeight"></div></div>
+                                <div class="info-grid" id="row_blood"><div class="lbl">Blood Group</div><div>:</div><div class="val font-bold text-red-600" id="cvBlood"></div></div>
+                                <div class="info-grid" id="row_complex"><div class="lbl">Complexion</div><div>:</div><div class="val" id="cvComplex"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_gotra"><div class="lbl">Gotra</div><div>:</div><div class="val" id="cvGotra"></div></div>
+                                <div class="info-grid" id="row_rashi"><div class="lbl">Rashi (Zodiac)</div><div>:</div><div class="val" id="cvRashi"></div></div>
+                                <div class="info-grid" id="row_nakshatra"><div class="lbl">Nakshatra</div><div>:</div><div class="val" id="cvNakshatra"></div></div>
+                            </div>
+
+                            <!-- Education & Career -->
+                            <div class="mb-4">
+                                <h2 class="head-font sec-title"><i class="fa-solid fa-graduation-cap text-[0.6em]"></i> Education & Career</h2>
+                                <div class="info-grid" id="row_edu"><div class="lbl">Highest Education</div><div>:</div><div class="val font-bold" id="cvEdu"></div></div>
+                                <div class="info-grid" id="row_uni"><div class="lbl">University</div><div>:</div><div class="val" id="cvUni"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_job"><div class="lbl">Occupation</div><div>:</div><div class="val font-bold" id="cvJob"></div></div>
+                                <div class="info-grid" id="row_comp"><div class="lbl">Company</div><div>:</div><div class="val" id="cvComp"></div></div>
+                                <div class="info-grid" id="row_inc"><div class="lbl">Annual Income</div><div>:</div><div class="val" id="cvInc"></div></div>
+                            </div>
+
+                            <!-- Family Details -->
+                            <div class="mb-4">
+                                <h2 class="head-font sec-title"><i class="fa-solid fa-users text-[0.6em]"></i> Family Background</h2>
+                                <div class="info-grid" id="row_fname"><div class="lbl">Father's Name</div><div>:</div><div class="val font-bold" id="cvFName"></div></div>
+                                <div class="info-grid" id="row_fjob"><div class="lbl">Father's Occ.</div><div>:</div><div class="val text-gray-600" id="cvFJob"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_mname"><div class="lbl">Mother's Name</div><div>:</div><div class="val font-bold" id="cvMName"></div></div>
+                                <div class="info-grid" id="row_mjob"><div class="lbl">Mother's Occ.</div><div>:</div><div class="val text-gray-600" id="cvMJob"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_bros"><div class="lbl">Total Brothers</div><div>:</div><div class="val" id="cvBros"></div></div>
+                                <div class="info-grid" id="row_sis"><div class="lbl">Total Sisters</div><div>:</div><div class="val" id="cvSis"></div></div>
+                                <div class="h-1"></div>
+                                <div class="info-grid" id="row_mama"><div class="lbl">Maternal Uncle</div><div>:</div><div class="val" id="cvMama"></div></div>
+                                <div class="info-grid" id="row_native"><div class="lbl">Native Place</div><div>:</div><div class="val" id="cvNative"></div></div>
+                            </div>
+
+                            <!-- Contact Info -->
+                            <div class="mb-2">
+                                <h2 class="head-font sec-title"><i class="fa-solid fa-location-dot text-[0.6em]"></i> Contact Details</h2>
+                                <div class="info-grid" id="row_phone"><div class="lbl">Contact Number</div><div>:</div><div class="val font-bold" id="cvPhone"></div></div>
+                                <div class="info-grid" id="row_email"><div class="lbl">Email Address</div><div>:</div><div class="val" id="cvEmail"></div></div>
+                                <div class="info-grid" id="row_add"><div class="lbl">Res. Address</div><div>:</div><div class="val" id="cvAdd"></div></div>
+                            </div>
+
+                            <!-- Footer Note -->
+                            <div class="mt-auto pt-4 text-center" id="cvKundliWrap">
+                                <p class="text-[0.8em] font-semibold italic text-gray-500">"Horoscope / Kundli matching is required."</p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-6 right-6 left-6 md:left-auto z-40">
+                <button onclick="triggerPrint()" class="w-full md:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white px-8 py-4 rounded-full font-black text-lg shadow-[0_10px_30px_rgba(139,92,246,0.4)] transition transform hover:-translate-y-1 flex items-center justify-center gap-3 border-2 border-white/20">
+                    <i class="fa-solid fa-download"></i> DOWNLOAD BIODATA (PRINT READY)
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden Processing Overlay -->
+    <div id="printOverlay" class="fixed inset-0 bg-white/95 backdrop-blur-sm z-[9999] hidden flex-col items-center justify-center text-violet-600 no-print">
+        <i class="fa-solid fa-circle-notch fa-spin text-5xl mb-4"></i>
+        <h2 class="text-2xl font-bold font-heading">Generating High-Quality File...</h2>
+        <p class="text-sm font-medium text-gray-500 mt-2">Preparing exact resolution print window.</p>
+    </div>
+
+    <script>
+        // --- 1. UI Navigation & Accordion ---
+        function switchTab(tab) {
+            document.getElementById('tabContent-details').classList.add('hidden');
+            document.getElementById('tabContent-design').classList.add('hidden');
+            document.getElementById('tabBtn-details').className = "flex-1 text-gray-500 hover:bg-white py-2 rounded-md text-xs font-bold transition";
+            document.getElementById('tabBtn-design').className = "flex-1 text-gray-500 hover:bg-white py-2 rounded-md text-xs font-bold transition";
+
+            document.getElementById(`tabContent-${tab}`).classList.remove('hidden');
+            document.getElementById(`tabBtn-${tab}`).className = "flex-1 bg-white shadow-sm border border-gray-200 text-violet-700 py-2 rounded-md text-xs font-bold transition";
+        }
+
+        function toggleAcc(el) {
+            const content = el.nextElementSibling;
+            if(content.classList.contains('open')) {
+                content.classList.remove('open');
+                el.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                el.classList.add('open');
+            }
+        }
+
+        // --- 2. DELETE FIELD LOGIC ---
+        function removeField(wrapId, rowId) {
+            const wrap = document.getElementById(wrapId);
+            const row = document.getElementById(rowId);
+            if(wrap) wrap.style.display = 'none';
+            if(row) row.style.display = 'none';
+            triggerAutoFit();
+        }
+
+        // --- 3. THEME & DESIGN MATRICES ---
+        const colors = ['#7f1d1d', '#1e3a8a', '#b45309', '#064e3b', '#be185d', '#0f172a', '#4338ca', '#c2410c', '#047857', '#9d174d', '#334155', '#3b82f6', '#d97706', '#10b981', '#ec4899', '#5b21b6', '#ea580c', '#14b8a6', '#db2777', '#000000'];
+        const cGrid = document.getElementById('colorGrid');
+        colors.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = "w-full aspect-square rounded-md border border-gray-200 shadow-sm cursor-pointer hover:scale-110 transition hover:border-black";
+            btn.style.backgroundColor = c;
+            btn.onclick = () => { document.documentElement.style.setProperty('--primary', c); };
+            cGrid.appendChild(btn);
+        });
+
+        function updateDesign() {
+            const page = document.getElementById('a4-page');
+            const frame = document.getElementById('selFrame').value;
+            const font = document.getElementById('selFont').value;
+            page.className = '';
+            page.classList.add(frame, font);
+            triggerAutoFit();
+        }
+
+        function setPhotoMask(maskClass) {
+            const img = document.getElementById('cvPhoto');
+            img.className = `photo-box ${maskClass} shadow-md`;
+        }
+
+        function setDimension(type) {
+            const page = document.getElementById('a4-page');
+            document.getElementById('btnDim-a4').classList.remove('bg-violet-600', 'text-white', 'border-violet-700');
+            document.getElementById('btnDim-a4').classList.add('bg-white', 'text-gray-600', 'border-gray-300');
+            document.getElementById('btnDim-mobile').classList.remove('bg-violet-600', 'text-white', 'border-violet-700');
+            document.getElementById('btnDim-mobile').classList.add('bg-white', 'text-gray-600', 'border-gray-300');
+
+            if(type === 'a4') {
+                page.style.height = '297mm';
+                document.getElementById('btnDim-a4').classList.add('bg-violet-600', 'text-white', 'border-violet-700');
+            } else {
+                page.style.height = 'auto';
+                page.style.minHeight = '297mm';
+                document.getElementById('btnDim-mobile').classList.add('bg-violet-600', 'text-white', 'border-violet-700');
+            }
+            triggerAutoFit();
+        }
+
+        // --- 4. LIVE DATA BINDING ---
+        function updateData() {
+            document.getElementById('cvHdText').innerText = document.getElementById('inpHdText').value;
+            const icon = document.getElementById('inpHdIcon').value;
+            const iBox = document.getElementById('cvHdIconBox');
+            if(icon === 'none') { iBox.style.display = 'none'; } 
+            else { iBox.style.display = 'block'; document.getElementById('cvHdIcon').className = `fa-solid ${icon} text-[2em]`; }
+
+            document.getElementById('cvName').innerText = document.getElementById('inpName').value;
+            document.getElementById('cvDob').innerText = document.getElementById('inpDob').value;
+            document.getElementById('cvTob').innerText = document.getElementById('inpTob').value;
+            document.getElementById('cvPob').innerText = document.getElementById('inpPob').value;
+            document.getElementById('cvHeight').innerText = document.getElementById('inpHeight').value;
+            document.getElementById('cvBlood').innerText = document.getElementById('inpBlood').value;
+            document.getElementById('cvComplex').innerText = document.getElementById('inpComplex').value;
+            document.getElementById('cvGotra').innerText = document.getElementById('inpGotra').value;
+            document.getElementById('cvRashi').innerText = document.getElementById('inpRashi').value;
+            document.getElementById('cvNakshatra').innerText = document.getElementById('inpNakshatra').value;
+
+            document.getElementById('cvEdu').innerText = document.getElementById('inpEdu').value;
+            document.getElementById('cvUni').innerText = document.getElementById('inpUni').value;
+            document.getElementById('cvJob').innerText = document.getElementById('inpJob').value;
+            document.getElementById('cvComp').innerText = document.getElementById('inpComp').value;
+            document.getElementById('cvInc').innerText = document.getElementById('inpInc').value;
+
+            document.getElementById('cvFName').innerText = document.getElementById('inpFName').value;
+            document.getElementById('cvFJob').innerText = document.getElementById('inpHJob').value;
+            document.getElementById('cvMName').innerText = document.getElementById('inpMName').value;
+            document.getElementById('cvMJob').innerText = document.getElementById('inpMJob').value;
+            
+            document.getElementById('cvBros').innerText = document.getElementById('inpBros').value;
+            document.getElementById('cvSis').innerText = document.getElementById('inpSis').value;
+            document.getElementById('cvMama').innerText = document.getElementById('inpMama').value;
+            document.getElementById('cvNative').innerText = document.getElementById('inpNative').value;
+
+            document.getElementById('cvPhone').innerText = document.getElementById('inpPhone').value;
+            document.getElementById('cvEmail').innerText = document.getElementById('inpEmail').value;
+            document.getElementById('cvAdd').innerText = document.getElementById('inpAdd').value;
+            
+            const kundliChecked = document.getElementById('inpKundli') ? document.getElementById('inpKundli').checked : false;
+            document.getElementById('cvKundliWrap').style.display = kundliChecked ? 'block' : 'none';
+
+            triggerAutoFit();
+        }
+
+        function handlePhoto(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('cvPhoto').src = event.target.result;
+                document.getElementById('cvPhotoWrap').style.display = 'flex';
+                triggerAutoFit();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- 5. SMART TEXT SCALING ALGORITHM ---
+        let autoFitTimeout;
+        function triggerAutoFit() {
+            clearTimeout(autoFitTimeout);
+            autoFitTimeout = setTimeout(executeAutoFit, 50);
+        }
+
+        function executeAutoFit() {
+            const page = document.getElementById('a4-page');
+            if(page.style.height === 'auto') {
+                page.style.fontSize = '16px';
+                return;
+            }
+
+            const content = document.getElementById('cv-content');
+            let fontSize = 17; 
+            page.style.fontSize = `${fontSize}px`;
+            const maxH = page.clientHeight - 80; 
+            
+            while(content.scrollHeight > maxH && fontSize > 10) {
+                fontSize -= 0.5;
+                page.style.fontSize = `${fontSize}px`;
+            }
+        }
+
+        function fitToScreen() {
+            const wrapper = document.getElementById('zoom-wrapper');
+            const parent = wrapper.parentElement;
+            
+            const targetWidth = 794;
+            const availableWidth = parent.clientWidth - 40;
+            
+            let scale = availableWidth / targetWidth;
+            if(scale > 1) scale = 1; 
+            
+            wrapper.style.transform = `scale(${scale})`;
+            wrapper.style.marginBottom = `-${(1 - scale) * 1122}px`; 
+        }
+        window.addEventListener('resize', fitToScreen);
+
+        // --- 6. BULLETPROOF PRINT / EXPORT ENGINE ---
+        async function triggerPrint() {
+            const loader = document.getElementById('printOverlay');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+
+            const wrapper = document.getElementById('zoom-wrapper');
+            const oldTransform = wrapper.style.transform;
+            wrapper.style.transform = 'scale(1)';
+
+            setTimeout(async () => {
+                try {
+                    const element = document.getElementById('a4-page');
+                    const canvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Marriage Biodata Document</title>
+                            <style>
+                                @page { size: A4 portrait; margin: 0; }
+                                body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: flex-start; background: white; }
+                                img { width: 100%; height: auto; object-fit: contain; }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${imgData}" onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+                        </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                } catch (err) {
+                    console.error("Print Engine Error:", err);
+                    alert("An error occurred during document generation.");
+                } finally {
+                    wrapper.style.transform = oldTransform;
+                    loader.classList.add('hidden'); loader.classList.remove('flex');
+                }
+            }, 300);
+        }
+
+        window.onload = () => {
+            updateData();
+            fitToScreen();
+        };
+    </script>
+</body>
+</html>
